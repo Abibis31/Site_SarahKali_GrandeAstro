@@ -204,19 +204,20 @@
 
     <!-- Footer -->
     <footer class="footer">
-      <!-- Botão WhatsApp Flutuante com Font Awesome -->
-<a 
-    href="https://wa.me/5511999999999?text=Olá!%20Gostaria%20de%20agendar%20uma%20consulta%20com%20Sarah%20Kali" 
-    class="whatsapp-float" 
-    target="_blank" 
-    rel="noopener noreferrer"
-    aria-label="Fale conosco no WhatsApp"
->
-    <i class="whatsapp-icon fab fa-whatsapp"></i>
-    <div class="whatsapp-tooltip">
-        Agende sua consulta
-    </div>
-</a>
+        <!-- Botão WhatsApp Flutuante -->
+        <a 
+            href="https://wa.me/5511999999999?text=Olá!%20Gostaria%20de%20agendar%20uma%20consulta%20com%20Sarah%20Kali" 
+            class="whatsapp-float" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            aria-label="Fale conosco no WhatsApp"
+        >
+            <i class="whatsapp-icon fab fa-whatsapp"></i>
+            <div class="whatsapp-tooltip">
+                Agende sua consulta
+            </div>
+        </a>
+        
         <div class="container">
             <div class="footer-content">
                 <div class="footer-brand">
@@ -234,8 +235,65 @@
         </div>
     </footer>
 
+    <!-- ===== CHAT DA SARAH KALI ===== -->
+    <!-- Botão do Chat Flutuante -->
+    <button class="chat-float" id="chatFloat">
+        <div class="chat-icon">🔮</div>
+        <div class="chat-tooltip">Fale com a Sarah</div>
+    </button>
+
+    <!-- Modal do Chat -->
+    <div class="chat-modal" id="chatModal">
+        <div class="chat-header">
+            <div class="chat-header-content">
+                <div class="chat-avatar">✨</div>
+                <div class="chat-title">
+                    <h4>Sarah Kali</h4>
+                    <span class="chat-status">Online • Pronta para ajudar</span>
+                </div>
+            </div>
+            <button class="chat-close" id="chatClose">×</button>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="message assistant">
+                <div class="message-content">
+                    Olá! Eu sou Sarah Kali. Como posso ajudá-lo hoje em sua jornada espiritual? 
+                    Estou aqui para orientar sobre tarot, astrologia e numerologia. ✨
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-input-container">
+            <form class="chat-form" id="chatForm">
+                <input 
+                    type="text" 
+                    id="chatInput"
+                    placeholder="Digite sua pergunta sobre espiritualidade..."
+                    maxlength="500"
+                >
+                <button type="submit" class="chat-send">
+                    <span>Enviar</span>
+                    <div class="send-icon">➤</div>
+                </button>
+            </form>
+            <div class="chat-suggestions">
+                <button class="suggestion-btn" data-question="Como funciona uma consulta de tarot?">
+                    📚 Consulta de Tarot
+                </button>
+                <button class="suggestion-btn" data-question="O que inclui um mapa astral completo?">
+                    💫 Mapa Astral
+                </button>
+                <button class="suggestion-btn" data-question="Como agendar uma consulta particular?">
+                    ⚡ Agendar Consulta
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
+        // ===== ANIMAÇÕES GERAIS =====
         AOS.init({
             duration: 1000,
             once: true,
@@ -249,6 +307,130 @@
         hamburger.addEventListener('click', () => {
             hamburger.classList.toggle('active');
             navMenu.classList.toggle('active');
+        });
+
+        // ===== SISTEMA DE CHAT =====
+        const chatFloat = document.getElementById('chatFloat');
+        const chatModal = document.getElementById('chatModal');
+        const chatClose = document.getElementById('chatClose');
+        const chatForm = document.getElementById('chatForm');
+        const chatInput = document.getElementById('chatInput');
+        const chatMessages = document.getElementById('chatMessages');
+        const suggestionBtns = document.querySelectorAll('.suggestion-btn');
+
+        let isLoading = false;
+        let lastMessageTime = 0;
+
+        // Abrir/Fechar Modal
+        chatFloat.addEventListener('click', () => {
+            chatModal.classList.add('active');
+            chatFloat.style.display = 'none';
+            setTimeout(() => chatInput.focus(), 300);
+        });
+
+        chatClose.addEventListener('click', () => {
+            chatModal.classList.remove('active');
+            chatFloat.style.display = 'flex';
+        });
+
+        // Fechar ao clicar fora
+        document.addEventListener('click', (e) => {
+            if (!chatModal.contains(e.target) && !chatFloat.contains(e.target) && chatModal.classList.contains('active')) {
+                chatModal.classList.remove('active');
+                chatFloat.style.display = 'flex';
+            }
+        });
+
+        // Sugestões de Perguntas
+        suggestionBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const question = btn.getAttribute('data-question');
+                chatInput.value = question;
+                chatInput.focus();
+            });
+        });
+
+        // Enviar Mensagem
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const now = Date.now();
+            if (now - lastMessageTime < 1000) return; // Prevenir spam
+            
+            const message = chatInput.value.trim();
+            if (!message || isLoading) return;
+            
+            lastMessageTime = now;
+            addMessage(message, 'user');
+            chatInput.value = '';
+            showTypingIndicator();
+            
+            try {
+                isLoading = true;
+                
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: message }]
+                    })
+                });
+
+                if (!response.ok) throw new Error('Erro na resposta');
+                const data = await response.json();
+                
+                removeTypingIndicator();
+                addMessage(data.message, 'assistant');
+                
+            } catch (error) {
+                console.error('Erro no chat:', error);
+                removeTypingIndicator();
+                addMessage('Desculpe, estou realinhando minhas energias cósmicas. Tente novamente ou use o WhatsApp. ✨', 'assistant');
+            } finally {
+                isLoading = false;
+            }
+        });
+
+        // Funções Auxiliares
+        function addMessage(content, role) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            messageDiv.innerHTML = `<div class="message-content">${content}</div>`;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message assistant';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typing = document.getElementById('typing-indicator');
+            if (typing) typing.remove();
+        }
+
+        // Enviar com Enter
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                chatForm.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Focar no input ao abrir
+        chatFloat.addEventListener('click', () => {
+            setTimeout(() => chatInput.focus(), 300);
         });
     </script>
 </body>
