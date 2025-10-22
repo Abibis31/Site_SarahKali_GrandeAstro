@@ -1139,3 +1139,311 @@ body::after {
         display: none; /* Oculta tooltip no mobile */
     }
 }
+
+/* ===== CORREÇÕES MOBILE ===== */
+@media (max-width: 768px) {
+    /* Header Mobile */
+    .header {
+        padding: 0.8rem 0;
+    }
+    
+    .navbar {
+        padding: 0 15px;
+    }
+    
+    .nav-brand h2 {
+        font-size: 1.2rem;
+        letter-spacing: 2px;
+    }
+    
+    .hamburger {
+        display: flex;
+    }
+    
+    .nav-menu {
+        position: fixed;
+        left: -100%;
+        top: 60px;
+        flex-direction: column;
+        background: rgba(26, 26, 46, 0.98);
+        backdrop-filter: blur(20px);
+        width: 100%;
+        height: calc(100vh - 60px);
+        text-align: center;
+        transition: 0.3s;
+        padding: 2rem 0;
+        gap: 2rem;
+        border-top: 1px solid var(--glow-gold);
+        z-index: 999;
+    }
+    
+    .nav-menu.active {
+        left: 0;
+    }
+    
+    .nav-menu a {
+        font-size: 1.1rem;
+        padding: 1rem 0;
+        display: block;
+    }
+    
+    /* Hero Mobile */
+    .hero {
+        flex-direction: column;
+        text-align: center;
+        padding: 100px 15px 40px;
+        gap: 2rem;
+        min-height: auto;
+    }
+    
+    .hero-content h1 {
+        font-size: 2.2rem;
+        line-height: 1.2;
+        margin-bottom: 1rem;
+    }
+    
+    .hero-content p {
+        font-size: 1.1rem;
+        max-width: 100%;
+        margin-bottom: 2rem;
+    }
+    
+    .hero-buttons {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: center;
+    }
+    
+    .btn-primary, .btn-secondary {
+        padding: 1rem 2rem;
+        width: 100%;
+        max-width: 280px;
+    }
+    
+    .hero-image {
+        width: 100%;
+        margin-top: 1rem;
+    }
+    
+    .hero-img {
+        height: 400px;
+        width: 100%;
+        max-width: 400px;
+    }
+    
+    /* Services Mobile */
+    .services {
+        padding: 80px 0;
+    }
+    
+    .services h2 {
+        font-size: 2.2rem;
+        padding: 0 15px;
+    }
+    
+    .section-subtitle {
+        font-size: 1.1rem;
+        padding: 0 15px;
+        margin-bottom: 3rem;
+    }
+    
+    .services-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        padding: 0 15px;
+    }
+    
+    .service-card {
+        padding: 2rem 1.5rem;
+        margin: 0 auto;
+        max-width: 400px;
+    }
+    
+    /* About Mobile */
+    .about {
+        padding: 80px 0;
+    }
+    
+    .about-content {
+        flex-direction: column;
+        gap: 3rem;
+        padding: 0 15px;
+    }
+    
+    .about-text h2 {
+        font-size: 2.2rem;
+        text-align: center;
+    }
+    
+    .about-subtitle {
+        text-align: center;
+        font-size: 1.1rem;
+    }
+    
+    .about-text p {
+        font-size: 1.1rem;
+        text-align: justify;
+    }
+    
+    .about-stats {
+        justify-content: space-around;
+        gap: 1.5rem;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+    }
+    
+    .about-image {
+        width: 100%;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+    
+    /* Testimonials Mobile */
+    .testimonials {
+        padding: 80px 0;
+    }
+    
+    .testimonials h2 {
+        font-size: 2.2rem;
+        padding: 0 15px;
+    }
+    
+    .testimonials-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        padding: 0 15px;
+    }
+    
+    .testimonial-card {
+        padding: 2rem 1.5rem;
+        margin: 0 auto;
+        max-width: 400px;
+    }
+    
+    /* Contact Mobile */
+    .contact {
+        padding: 80px 0;
+    }
+    
+    .contact h2 {
+        font-size: 2.2rem;
+        padding: 0 15px;
+    }
+    
+    .contact-content {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+        padding: 0 15px;
+    }
+    
+    .contact-form {
+        gap: 1.5rem;
+    }
+    
+    /* Footer Mobile */
+    .footer-content {
+        flex-direction: column;
+        gap: 2rem;
+        text-align: center;
+        padding: 0 15px;
+    }
+    
+    .footer-links {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    /* Container geral */
+    .container {
+        padding: 0 15px;
+    }
+    
+    /* Ajustes de texto longo */
+    p, li, .desvende {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+    }
+}
+
+/* ===== CORREÇÕES ESPECÍFICAS PARA CELULARES PEQUENOS ===== */
+@media (max-width: 480px) {
+    .hero-content h1 {
+        font-size: 1.8rem;
+    }
+    
+    .hero-content p {
+        font-size: 1rem;
+    }
+    
+    .services h2,
+    .about-text h2,
+    .testimonials h2,
+    .contact h2 {
+        font-size: 1.8rem;
+    }
+    
+    .service-card,
+    .testimonial-card {
+        padding: 1.5rem 1rem;
+    }
+    
+    .about-stats {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .stat {
+        padding: 1rem 0;
+    }
+    
+    /* Garantir que nada vaze da tela */
+    * {
+        max-width: 100vw;
+    }
+    
+    body {
+        overflow-x: hidden;
+    }
+}
+
+/* ===== CORREÇÃO PARA VIEWPORT ===== */
+@viewport {
+    width: device-width;
+    zoom: 1.0;
+}
+
+/* ===== GARANTIR QUE IMAGENS NÃO ESTOUREM ===== */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* ===== PREVENIR HORIZONTAL SCROLL ===== */
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* ===== AJUSTES DE TEXTO PARA MOBILE ===== */
+@media (max-width: 768px) {
+    h1, h2, h3 {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    
+    .container_um_box_um h1 {
+        font-size: 1.8rem !important;
+        text-align: center;
+    }
+    
+    .desvende {
+        font-size: 1.1rem !important;
+        text-align: center;
+        max-width: 100% !important;
+        padding: 0 10px;
+    }
+}
