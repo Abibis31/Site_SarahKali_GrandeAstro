@@ -1,138 +1,87 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import dotenv from 'dotenv';
+dotenv.config();
 
-// Configuração da API Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const GROQ_URL = process.env.GROQ_URL || 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-// Personalidade completa da Sarah Kali
-const SARAH_PERSONALITY = `
-VOCÊ É SARAH KALI - Mestra em Ciências Ocultas com mais de 15 anos de experiência.
+// Personalidade da Sarah Kali (pode editar como quiser)
+const SARAH_PERSONALITY =  `Você é Sarah Kali, uma cartomante sábia, intuitiva e acolhedora.
+Fale de forma mística, com leveza e empatia, usando emojis como ✨🔮💫 quando fizer sentido.
 
-SUA IDENTIDADE:
-- Nome: Sarah Kali
-- Experiência: 15+ anos em Tarot, Astrologia e Numerologia
-- Especialização: Artes divinatórias e desenvolvimento espiritual
-- Personalidade: Sábia, compassiva, espiritual e acolhedora
+Você atende com tarot, astrologia e magias espirituais. Seja acolhedora e ofereça ajuda espiritual.
 
-ESPECIALIDADES PRINCIPAIS:
-🔮 TAROT COMPLETO:
-   - Baralho completo de 78 cartas
-   - Leituras precisas e orientações transformadoras
-   - Análise de situação atual e tendências futuras
-   - Sessões de 60 minutos com insights profundos
+PRINCIPAIS SERVIÇOS:
+🔮 3 Perguntas — R$10
+🔮 7 Perguntas — R$20  
+💖 Templo de Afrodite (Amor) — R$30
+🌟 Leitura da Semana — R$20
+📅 Leitura Mensal — R$25
+🔍 Área da Vida — R$15
+🌀 Mapa Astral — R$30
+🔢 Numerologia — R$25
+❤️ Jogo: Tem Volta? — R$20
+✨ Magias Espirituais — Valores variados
 
-💫 ASTROLOGIA AVANÇADA:
-   - Mapas astrais completos e personalizados
-   - Análise de signos solares, lunares e ascendentes
-   - Estudo de casas astrológicas e aspectos planetários
-   - Previsões astrológicas mensais e anuais
+CHAVE PIX: 48999017075 (Rosani)
 
-📝 NUMEROLOGIA PRECISA:
-   - Cálculo do número de vida e destino
-   - Análise do número de expressão e personalidade
-   - Estudo de anos pessoais e mensais
-   - Relatórios numerológicos detalhados
-
-✨ DESENVOLVIMENTO ESPIRITUAL:
-   - Orientação para autoconhecimento
-   - Técnicas de crescimento pessoal
-   - Conexão com propósito de vida
-   - Equilíbrio energético e emocional
-
-DIRETRIZES DE ATENDIMENTO:
-- Use linguagem elegante, espiritual mas acessível
-- Seja acolhedora como uma mestra experiente
-- Respostas com 2-3 parágrafos (nem muito curta, nem muito longa)
-- Use emojis místicos moderadamente (✨, 🔮, 💫, 📝, ⚡)
-- Ofereça insights profundos mas práticos
-- Mantenha tom profissional mas caloroso
-
-PARA AGENDAMENTOS:
-- Direcione para WhatsApp: (11) 99999-9999
-- Ou para email: contato@sarahkali.com
-- Explique que as consultas são personalizadas
-- Mantenha o interesse sem pressionar
-
-PROIBIÇÕES ABSOLUTAS:
-- NUNCA faça diagnósticos médicos ou psicológicos
-- NUNCA dê conselhos financeiros específicos
-- NUNCA prometa resultados absolutos ou curas milagrosas
-- NUNCA substitua profissionais especializados
-- NUNCA faça previsões catastróficas
-
-IMPORTANTE:
-Você É a Sarah Kali. Incorpore completamente esta persona em todas as respostas.
-Mantenha a essência espiritual mas seja prática e realista.
-O cliente deve sentir que está conversando com uma especialista genuína.
-`;
+Seja gentil, use emojis e ofereça orientação espiritual.`;
 
 export async function getGeminiResponse(messages) {
     try {
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-pro",
-            generationConfig: {
+        const lastMessage = messages[messages.length - 1]?.content || '';
+        console.log('📨 Enviando para Groq:', lastMessage);
+        
+        const response = await fetch(GROQ_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${GROQ_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: "llama-3.1-8b-instant", // modelo atualizado
+                messages: [
+                    { role: "system", content: SARAH_PERSONALITY },
+                    { role: "user", content: lastMessage }
+                ],
                 temperature: 0.7,
-                topK: 40,
-                topP: 0.95,
-                maxOutputTokens: 1024,
-            }
+                max_tokens: 500
+            })
         });
 
-        // Pega a última mensagem do usuário
-        const lastUserMessage = messages[messages.length - 1]?.content || '';
+        console.log('📊 Status da resposta:', response.status);
         
-        // Prompt otimizado para a Sarah Kali
-        const prompt = `
-${SARAH_PERSONALITY}
-
-CONTEXTO DA CONVERSA:
-O cliente está interessado em serviços espirituais e busca orientação.
-
-PERGUNTA DO CLIENTE:
-"${lastUserMessage}"
-
-COMO SARAH KALI, FORNEÇA UMA RESPOSTA:
-- Seja natural e conversacional
-- Mantenha a personalidade espiritual
-- Ofereça valor real na resposta
-- Se apropriado, direcione para agendamento
-- Use sua expertise de 15 anos
-- Seja compassiva e sábia
-
-RESPONDA AGORA COMO SARAH KALI:
-        `;
-
-        // Gera a resposta
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        let text = response.text();
-
-        // Limpeza e formatação da resposta
-        text = text
-            .replace(/\*\*(.*?)\*\*/g, '$1') // Remove markdown bold
-            .replace(/\*(.*?)\*/g, '$1')     // Remove markdown italic
-            .replace(/^#+\s*/gm, '')         // Remove headers markdown
-            .trim();
-
-        // Garante que a resposta tenha um tom adequado
-        if (!text.includes('✨') && !text.includes('🔮') && !text.includes('💫')) {
-            // Adiciona um emoji místico se não tiver nenhum
-            const emojis = ['✨', '🔮', '💫', '📝', '⚡'];
-            const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-            text += ` ${randomEmoji}`;
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.log('❌ Erro HTTP:', response.status, errorText);
+            throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
         }
 
-        return text;
-
-    } catch (error) {
-        console.error('❌ Erro na API Gemini:', error);
+        const data = await response.json();
+        console.log('✅ Resposta Groq:', JSON.stringify(data, null, 2));
         
-        // Respostas de fallback mais naturais
+        if (data.choices && data.choices[0]) {
+            let text = data.choices[0].message.content;
+            console.log('📝 Texto extraído:', text);
+            
+            if (!text.includes('✨') && !text.includes('🔮') && !text.includes('💫')) {
+                const emojis = ['✨', '🔮', '💫', '📝', '⚡'];
+                const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                text += ` ${randomEmoji}`;
+            }
+            
+            return text;
+        } else {
+            throw new Error('Resposta inválida da API: ' + JSON.stringify(data));
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro completo:', error.message);
+        console.error('Stack:', error.stack);
+        
         const fallbackResponses = [
-            "No momento, estou conectando com as energias cósmicas para uma orientação mais precisa. Poderia reformular sua pergunta? Estou aqui para ajudar. ✨",
-            "As cartas estão se reorganizando para uma leitura mais clara. Enquanto isso, conte-me mais sobre o que busca em sua jornada espiritual. 🔮",
-            "Estou sintonizando as vibrações do universo para melhor atendê-lo. Poderia compartilhar novamente sua questão? 💫",
-            "As estrelas estão se alinhando para nossa conversa. Enquanto isso, você pode me contar mais sobre suas dúvidas espirituais? 📝",
-            "No momento, estou aprofundando minha conexão espiritual. Sua pergunta é muito importante - poderia repeti-la? ⚡"
+            "Estou sintonizando as vibrações do universo. Poderia compartilhar novamente sua questão? 💫",
+            "No momento, estou conectando com as energias cósmicas. Poderia repetir? ✨",
+            "As cartas estão se reorganizando. Enquanto isso, conte-me mais? 🔮"
         ];
         
         return fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
