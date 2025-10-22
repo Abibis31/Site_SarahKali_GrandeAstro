@@ -1,0 +1,1141 @@
+/* ===== VARIÁVEIS MÍSTICAS ===== */
+:root {
+    --deep-space: #0A0A1F;
+    --cosmic-purple: #4A1D6B;
+    --mystic-blue: #2D1B69;
+    --spiritual-gold: #C9A227;
+    --crystal-pink: #B76BA3;
+    --aura-teal: #2AA198;
+    --magic-silver: #E8E8E8;
+    --dark-matter: #1A1A2E;
+    --nebula: #16213E;
+    --starlight: #F5F5F5;
+    
+    --glow-gold: rgba(201, 162, 39, 0.6);
+    --glow-purple: rgba(74, 29, 107, 0.6);
+    --glow-blue: rgba(42, 161, 152, 0.6);
+    
+    --shadow-mystic: 0 0 30px rgba(74, 29, 107, 0.3);
+    --shadow-glow: 0 0 50px rgba(201, 162, 39, 0.4);
+    --shadow-deep: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* ===== RESET MÍSTICO ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Crimson Text', 'Playfair Display', serif;
+    line-height: 1.7;
+    color: var(--magic-silver);
+    background: var(--deep-space);
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Fundo cósmico */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 20% 80%, var(--cosmic-purple) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, var(--aura-teal) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, var(--crystal-pink) 0%, transparent 50%),
+        linear-gradient(45deg, var(--deep-space) 0%, var(--dark-matter) 100%);
+    background-blend-mode: overlay, screen, color-dodge;
+    z-index: -2;
+    opacity: 0.8;
+}
+
+/* Partículas cósmicas */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        radial-gradient(2px 2px at 20px 30px, var(--starlight), transparent),
+        radial-gradient(2px 2px at 40px 70px, var(--spiritual-gold), transparent),
+        radial-gradient(1px 1px at 90px 40px, var(--aura-teal), transparent),
+        radial-gradient(1px 1px at 130px 80px, var(--crystal-pink), transparent),
+        radial-gradient(2px 2px at 160px 30px, var(--magic-silver), transparent);
+    background-repeat: repeat;
+    background-size: 200px 100px;
+    z-index: -1;
+    animation: stars 60s linear infinite;
+}
+
+@keyframes stars {
+    from { transform: translateY(0); }
+    to { transform: translateY(-100px); }
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ===== HEADER MÍSTICO ===== */
+.header {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background: rgba(10, 10, 31, 0.8);
+    backdrop-filter: blur(15px);
+    border-bottom: 1px solid var(--glow-gold);
+    z-index: 1000;
+    padding: 1rem 0;
+    transition: all 0.4s ease;
+}
+
+.header.scrolled {
+    background: rgba(26, 26, 46, 0.95);
+    border-bottom-color: var(--glow-purple);
+    box-shadow: var(--shadow-mystic);
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.nav-brand h2 {
+    font-family: 'Cinzel', 'Playfair Display', serif;
+    color: var(--spiritual-gold);
+    font-weight: 400;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    position: relative;
+}
+
+.nav-brand h2::after {
+    content: '✦';
+    margin-left: 10px;
+    color: var(--aura-teal);
+    animation: spin 10s linear infinite;
+}
+
+@keyframes spin {
+    100% { transform: rotate(360deg); }
+}
+
+.nav-menu {
+    display: flex;
+    list-style: none;
+    gap: 3rem;
+}
+
+.nav-menu a {
+    text-decoration: none;
+    color: var(--magic-silver);
+    font-weight: 300;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    position: relative;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
+
+.nav-menu a::before {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--spiritual-gold), var(--aura-teal));
+    transition: width 0.3s ease;
+}
+
+.nav-menu a:hover {
+    color: var(--spiritual-gold);
+}
+
+.nav-menu a:hover::before {
+    width: 100%;
+}
+
+.hamburger {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+    gap: 4px;
+}
+
+.hamburger span {
+    width: 25px;
+    height: 2px;
+    background: var(--spiritual-gold);
+    transition: 0.3s;
+}
+
+/* ===== HERO MÍSTICO ===== */
+.hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 120px 40px 60px;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 4rem;
+    position: relative;
+}
+
+.hero::before {
+    content: '✦';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 20rem;
+    color: rgba(201, 162, 39, 0.03);
+    z-index: -1;
+    animation: pulse 4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.03; }
+    50% { opacity: 0.08; }
+}
+
+.hero-content {
+    flex: 1;
+    position: relative;
+}
+
+.hero-content h1 {
+    font-family: 'Cinzel', 'Playfair Display', serif;
+    font-size: 4.5rem;
+    font-weight: 300;
+    color: var(--starlight);
+    margin-bottom: 1.5rem;
+    line-height: 1.1;
+    letter-spacing: 2px;
+    text-shadow: 0 0 30px var(--glow-gold);
+    position: relative;
+}
+
+.hero-content h1::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 0;
+    width: 100px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--spiritual-gold), transparent);
+}
+
+.hero-content p {
+    font-size: 1.4rem;
+    color: var(--magic-silver);
+    margin-bottom: 2.5rem;
+    max-width: 500px;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+    line-height: 1.6;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 1.2rem 2.5rem;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 400;
+    transition: all 0.4s ease;
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--spiritual-gold), var(--cosmic-purple));
+    color: var(--starlight);
+    border: none;
+    box-shadow: 0 5px 25px var(--glow-gold);
+}
+
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: 0.5s;
+}
+
+.btn-primary:hover::before {
+    left: 100%;
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 35px var(--glow-gold);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--spiritual-gold);
+    border: 2px solid var(--spiritual-gold);
+    backdrop-filter: blur(10px);
+}
+
+.btn-secondary:hover {
+    background: var(--spiritual-gold);
+    color: var(--deep-space);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px var(--glow-gold);
+}
+
+.hero-image {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    position: relative;
+}
+
+.hero-image::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 110%;
+    height: 110%;
+    background: radial-gradient(circle, var(--glow-gold) 0%, transparent 70%);
+    filter: blur(20px);
+    opacity: 0.3;
+    animation: glow 3s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from { opacity: 0.3; }
+    to { opacity: 0.6; }
+}
+
+.hero-img {
+    max-width: 100%;
+    height: 600px;
+    object-fit: cover;
+    border-radius: 20px;
+    box-shadow: var(--shadow-deep);
+    border: 1px solid var(--glow-gold);
+    position: relative;
+    z-index: 1;
+    filter: sepia(0.3) contrast(1.1);
+    transition: all 0.4s ease;
+}
+
+.hero-img:hover {
+    filter: sepia(0) contrast(1.2);
+    transform: scale(1.02);
+}
+
+/* ===== SERVIÇOS MÍSTICOS ===== */
+.services {
+    padding: 150px 0;
+    background: linear-gradient(180deg, var(--deep-space) 0%, var(--nebula) 100%);
+    position: relative;
+}
+
+.services::before {
+    content: '♡♤♢♧';
+    position: absolute;
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 2rem;
+    color: var(--spiritual-gold);
+    opacity: 0.1;
+    letter-spacing: 20px;
+}
+
+.services h2 {
+    font-family: 'Cinzel', 'Playfair Display', serif;
+    font-size: 3.5rem;
+    text-align: center;
+    color: var(--starlight);
+    margin-bottom: 1rem;
+    text-shadow: 0 0 20px var(--glow-purple);
+}
+
+.section-subtitle {
+    text-align: center;
+    color: var(--magic-silver);
+    font-size: 1.3rem;
+    margin-bottom: 4rem;
+    font-weight: 300;
+    letter-spacing: 1px;
+}
+
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 3rem;
+}
+
+.service-card {
+    background: linear-gradient(135deg, rgba(42, 161, 152, 0.1), rgba(74, 29, 107, 0.1));
+    backdrop-filter: blur(10px);
+    padding: 3rem 2rem;
+    border-radius: 20px;
+    text-align: center;
+    border: 1px solid rgba(201, 162, 39, 0.2);
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.service-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(201, 162, 39, 0.1), transparent);
+    transition: 0.5s;
+}
+
+.service-card:hover::before {
+    left: 100%;
+}
+
+.service-card:hover {
+    transform: translateY(-10px);
+    border-color: var(--spiritual-gold);
+    box-shadow: var(--shadow-glow);
+}
+
+.card-icon {
+    font-size: 4rem;
+    margin-bottom: 2rem;
+    display: block;
+    text-shadow: 0 0 20px currentColor;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.service-card h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.8rem;
+    color: var(--spiritual-gold);
+    margin-bottom: 1.5rem;
+    letter-spacing: 1px;
+}
+
+.service-card p {
+    color: var(--magic-silver);
+    margin-bottom: 2.5rem;
+    font-size: 1.1rem;
+    line-height: 1.7;
+}
+
+.service-card ul {
+    list-style: none;
+    text-align: left;
+    margin-bottom: 2.5rem;
+}
+
+.service-card li {
+    padding: 0.8rem 0;
+    color: var(--magic-silver);
+    border-bottom: 1px solid rgba(201, 162, 39, 0.2);
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.service-card li::before {
+    content: '✦';
+    position: absolute;
+    left: 0;
+    color: var(--aura-teal);
+}
+
+.service-card li:last-child {
+    border-bottom: none;
+}
+
+.card-btn {
+    display: inline-block;
+    padding: 1rem 2.5rem;
+    background: transparent;
+    color: var(--spiritual-gold);
+    text-decoration: none;
+    border-radius: 50px;
+    border: 2px solid var(--spiritual-gold);
+    transition: all 0.4s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.card-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: var(--spiritual-gold);
+    transition: 0.4s;
+    z-index: -1;
+}
+
+.card-btn:hover {
+    color: var(--deep-space);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px var(--glow-gold);
+}
+
+.card-btn:hover::before {
+    left: 0;
+}
+
+/* ===== SOBRE MÍSTICO ===== */
+.about {
+    padding: 150px 0;
+    background: linear-gradient(180deg, var(--nebula) 0%, var(--dark-matter) 100%);
+    position: relative;
+}
+
+.about::after {
+    content: '☽ ☾';
+    position: absolute;
+    bottom: 50px;
+    right: 50px;
+    font-size: 3rem;
+    color: var(--spiritual-gold);
+    opacity: 0.1;
+}
+
+.about-content {
+    display: flex;
+    align-items: center;
+    gap: 5rem;
+}
+
+.about-text {
+    flex: 1;
+}
+
+.about-text h2 {
+    font-family: 'Cinzel', 'Playfair Display', serif;
+    font-size: 3.5rem;
+    color: var(--starlight);
+    margin-bottom: 1rem;
+    text-shadow: 0 0 20px var(--glow-purple);
+}
+
+.about-subtitle {
+    color: var(--spiritual-gold);
+    font-size: 1.3rem;
+    margin-bottom: 2.5rem;
+    font-weight: 300;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    display: block;
+}
+
+.about-text p {
+    color: var(--magic-silver);
+    margin-bottom: 2rem;
+    font-size: 1.2rem;
+    line-height: 1.8;
+    font-weight: 300;
+}
+
+.about-stats {
+    display: flex;
+    gap: 4rem;
+    margin-top: 3rem;
+}
+
+.stat {
+    text-align: center;
+    position: relative;
+}
+
+.stat::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 20px;
+    background: var(--spiritual-gold);
+}
+
+.stat-number {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: 300;
+    color: var(--spiritual-gold);
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 10px var(--glow-gold);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--magic-silver);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.about-image {
+    flex: 1;
+    position: relative;
+}
+
+.about-image::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    width: 100%;
+    height: 100%;
+    border: 2px solid var(--spiritual-gold);
+    border-radius: 20px;
+    z-index: -1;
+    opacity: 0.5;
+}
+
+.about-image img {
+    width: 100%;
+    border-radius: 20px;
+    box-shadow: var(--shadow-deep);
+    border: 1px solid var(--glow-gold);
+    filter: sepia(0.2) contrast(1.1);
+    transition: all 0.4s ease;
+}
+
+.about-image:hover img {
+    filter: sepia(0) contrast(1.2);
+    transform: scale(1.02);
+}
+
+/* ===== DEPOIMENTOS MÍSTICOS ===== */
+.testimonials {
+    padding: 150px 0;
+    background: linear-gradient(180deg, var(--dark-matter) 0%, var(--deep-space) 100%);
+    position: relative;
+}
+
+.testimonials::before {
+    content: '""';
+    position: absolute;
+    top: 100px;
+    left: 10%;
+    font-size: 10rem;
+    color: var(--spiritual-gold);
+    opacity: 0.05;
+    font-family: serif;
+}
+
+.testimonials h2 {
+    font-family: 'Cinzel', 'Playfair Display', serif;
+    font-size: 3.5rem;
+    text-align: center;
+    color: var(--starlight);
+    margin-bottom: 4rem;
+    text-shadow: 0 0 20px var(--glow-blue);
+}
+
+.testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2.5rem;
+}
+
+.testimonial-card {
+    background: linear-gradient(135deg, rgba(74, 29, 107, 0.2), rgba(42, 161, 152, 0.2));
+    backdrop-filter: blur(10px);
+    padding: 2.5rem;
+    border-radius: 15px;
+    border: 1px solid rgba(201, 162, 39, 0.3);
+    position: relative;
+    transition: all 0.4s ease;
+}
+
+.testimonial-card::before {
+    content: '"';
+    position: absolute;
+    top: 10px;
+    left: 20px;
+    font-size: 4rem;
+    color: var(--spiritual-gold);
+    opacity: 0.3;
+    font-family: serif;
+}
+
+.testimonial-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--spiritual-gold);
+    box-shadow: var(--shadow-mystic);
+}
+
+.testimonial-text {
+    font-style: italic;
+    color: var(--magic-silver);
+    margin-bottom: 2rem;
+    line-height: 1.7;
+    font-size: 1.1rem;
+    position: relative;
+    z-index: 1;
+}
+
+.testimonial-author {
+    border-top: 1px solid rgba(201, 162, 39, 0.3);
+    padding-top: 1.5rem;
+}
+
+.testimonial-author strong {
+    color: var(--spiritual-gold);
+    display: block;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 1px;
+}
+
+.testimonial-author span {
+    color: var(--magic-silver);
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+/* ===== CONTATO MÍSTICO ===== */
+.contact {
+    padding: 150px 0;
+    background: linear-gradient(180deg, var(--deep-space) 0%, var(--nebula) 100%);
+    position: relative;
+}
+
+.contact::after {
+    content: '✶';
+    position: absolute;
+    bottom: 100px;
+    right: 10%;
+    font-size: 5rem;
+    color: var(--spiritual-gold);
+    opacity: 0.1;
+    animation: spin 20s linear infinite;
+}
+
+.contact h2 {
+    font-family: 'Cinzel', 'Playfair Display', serif;
+    font-size: 3.5rem;
+    text-align: center;
+    color: var(--starlight);
+    margin-bottom: 4rem;
+    text-shadow: 0 0 20px var(--glow-purple);
+}
+
+.contact-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+}
+
+.contact-info h3 {
+    color: var(--spiritual-gold);
+    margin-bottom: 2.5rem;
+    font-size: 1.8rem;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 1px;
+}
+
+.contact-item {
+    margin-bottom: 2.5rem;
+    padding-left: 2rem;
+    position: relative;
+}
+
+.contact-item::before {
+    content: '⟡';
+    position: absolute;
+    left: 0;
+    color: var(--aura-teal);
+}
+
+.contact-item strong {
+    color: var(--starlight);
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.contact-item p {
+    color: var(--magic-silver);
+    font-size: 1.1rem;
+}
+
+.contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.contact-form input,
+.contact-form select,
+.contact-form textarea {
+    padding: 1.2rem;
+    background: rgba(26, 26, 46, 0.5);
+    border: 1px solid rgba(201, 162, 39, 0.3);
+    border-radius: 10px;
+    font-family: 'Crimson Text', serif;
+    font-size: 1.1rem;
+    color: var(--magic-silver);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.contact-form input:focus,
+.contact-form select:focus,
+.contact-form textarea:focus {
+    outline: none;
+    border-color: var(--spiritual-gold);
+    box-shadow: 0 0 20px var(--glow-gold);
+    background: rgba(26, 26, 46, 0.8);
+}
+
+.contact-form button {
+    align-self: flex-start;
+    margin-top: 1rem;
+}
+
+/* ===== FOOTER MÍSTICO ===== */
+.footer {
+    background: var(--dark-matter);
+    color: var(--magic-silver);
+    padding: 4rem 0 2rem;
+    border-top: 1px solid var(--glow-gold);
+    position: relative;
+}
+
+.footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--spiritual-gold), transparent);
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3rem;
+}
+
+.footer-brand h3 {
+    font-family: 'Cinzel', 'Playfair Display', serif;
+    color: var(--spiritual-gold);
+    margin-bottom: 1rem;
+    letter-spacing: 2px;
+}
+
+.footer-brand p {
+    color: var(--magic-silver);
+    opacity: 0.8;
+    font-style: italic;
+}
+
+.footer-links {
+    display: flex;
+    gap: 2.5rem;
+}
+
+.footer-links a {
+    color: var(--magic-silver);
+    text-decoration: none;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+}
+
+.footer-links a:hover {
+    opacity: 1;
+    color: var(--spiritual-gold);
+}
+
+.footer-bottom {
+    text-align: center;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(201, 162, 39, 0.2);
+    opacity: 0.6;
+    font-size: 0.9rem;
+}
+
+/* ===== RESPONSIVO ===== */
+@media (max-width: 768px) {
+    .hamburger {
+        display: flex;
+    }
+
+    .nav-menu {
+        position: fixed;
+        left: -100%;
+        top: 70px;
+        flex-direction: column;
+        background: rgba(26, 26, 46, 0.95);
+        backdrop-filter: blur(20px);
+        width: 100%;
+        text-align: center;
+        transition: 0.3s;
+        padding: 2rem 0;
+        gap: 2rem;
+        border-top: 1px solid var(--glow-gold);
+    }
+
+    .nav-menu.active {
+        left: 0;
+    }
+
+    .hamburger.active span:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 5px);
+    }
+
+    .hamburger.active span:nth-child(2) {
+        opacity: 0;
+    }
+
+    .hamburger.active span:nth-child(3) {
+        transform: rotate(-45deg) translate(7px, -6px);
+    }
+
+    .hero {
+        flex-direction: column;
+        text-align: center;
+        padding: 120px 20px 60px;
+        gap: 3rem;
+    }
+
+    .hero-content h1 {
+        font-size: 2.8rem;
+    }
+
+    .hero-buttons {
+        justify-content: center;
+    }
+
+    .about-content {
+        flex-direction: column;
+    }
+
+    .about-stats {
+        justify-content: space-around;
+    }
+
+    .contact-content {
+        grid-template-columns: 1fr;
+    }
+
+    .services-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .footer-content {
+        flex-direction: column;
+        gap: 2rem;
+        text-align: center;
+    }
+
+    .testimonials-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===== ANIMAÇÕES GLOBAIS ===== */
+.fade-in {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.6s ease;
+}
+
+.fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Scroll personalizado */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--dark-matter);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--spiritual-gold);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--aura-teal);
+}
+
+/* Seleção de texto */
+::selection {
+    background: var(--spiritual-gold);
+    color: var(--deep-space);
+}
+
+/* ===== BOTÃO WHATSAPP FLUTUANTE ===== */
+.whatsapp-float {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    box-shadow: 0 5px 25px rgba(37, 211, 102, 0.4);
+    z-index: 1000;
+    transition: all 0.4s ease;
+    animation: pulse-whatsapp 2s infinite;
+    border: 3px solid white;
+}
+
+.whatsapp-float:hover {
+    transform: scale(1.1) translateY(-5px);
+    box-shadow: 0 10px 35px rgba(37, 211, 102, 0.6);
+    animation: none;
+}
+
+.whatsapp-float::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    border-radius: 50%;
+    background: rgba(37, 211, 102, 0.2);
+    animation: ripple 2s infinite;
+    z-index: -1;
+}
+
+.whatsapp-icon {
+    font-size: 2rem;
+    color: white;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.whatsapp-tooltip {
+    position: absolute;
+    right: 85px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(26, 26, 46, 0.95);
+    backdrop-filter: blur(10px);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid var(--spiritual-gold);
+    box-shadow: var(--shadow-mystic);
+}
+
+.whatsapp-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    transform: translateY(-50%);
+    border: 8px solid transparent;
+    border-left-color: rgba(26, 26, 46, 0.95);
+}
+
+.whatsapp-float:hover .whatsapp-tooltip {
+    opacity: 1;
+    visibility: visible;
+    right: 90px;
+}
+
+@keyframes pulse-whatsapp {
+    0% {
+        box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 15px rgba(37, 211, 102, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
+    }
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+}
+
+/* Versão Mobile */
+@media (max-width: 768px) {
+    .whatsapp-float {
+        width: 60px;
+        height: 60px;
+        bottom: 20px;
+        right: 20px;
+    }
+    
+    .whatsapp-icon {
+        font-size: 1.7rem;
+    }
+    
+    .whatsapp-tooltip {
+        display: none; /* Oculta tooltip no mobile */
+    }
+}
