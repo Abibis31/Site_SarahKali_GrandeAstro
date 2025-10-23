@@ -41,13 +41,15 @@ export async function getGeminiResponse(messages) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: "llama-3.1-8b-instant",
+                model: "openai/gpt-oss-20b",  // ✅ MODELO CORRETO DA GROQ
                 messages: [
                     { role: "system", content: SARAH_PERSONALITY },
                     { role: "user", content: lastMessage }
                 ],
                 temperature: 0.7,
-                max_tokens: 500
+                max_tokens: 500,
+                top_p: 1,
+                stream: false  // ✅ IMPORTANTE: false para aplicação web
             })
         });
 
