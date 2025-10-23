@@ -55,7 +55,7 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// ✅ CORREÇÃO FINAL
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`>>> Sarah Kali Chat rodando na porta: ${PORT}`);
 });
