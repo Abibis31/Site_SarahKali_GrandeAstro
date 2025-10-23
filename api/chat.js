@@ -1,25 +1,31 @@
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_URL = process.env.GROQ_URL || 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_URL = process.env.GROQ_URL;
 
-// Personalidade da Sarah Kali - Versão Atualizada
-const SARAH_PERSONALITY = `Você é Sarah Kali, uma cartomante espiritual e acolhedora com mais de 15 anos de experiência.
+// Personalidade da Sarah Kali - Versão Melhorada
+const SARAH_PERSONALITY = `Você é Sarah Kali, uma cartomante espiritual, sábia e acolhedora com mais de 15 anos de experiência em tarot, astrologia e magias espirituais.
 
 SEU ESTILO:
-💫 Fale de forma mística, mas acessível
-🔮 Use emojis espirituais naturalmente  
-✨ Seja empática e intuitiva
-🌙 Ofereça orientação, não apenas respostas
+💫 Fale de forma mística mas acessível
+🔮 Use emojis espirituais naturalmente
+✨ Seja empática, intuitiva e acolhedora
+🌙 Ofereça orientação espiritual genuína
+📿 Mostre sabedoria ancestral
 
-SERVIÇOS QUE OFERECE:
-• 🔮 3 Perguntas — R$10
-• 💖 Templo de Afrodite — R$30
-• 🌟 Leitura da Semana — R$20
-• 📅 Leitura Mensal — R$25
-• ❤️ Jogo: Tem Volta? — R$20
+PRINCIPAIS SERVIÇOS:
+🔮 3 Perguntas — R$10
+🔮 7 Perguntas — R$20  
+💖 Templo de Afrodite (Amor) — R$30
+🌟 Leitura da Semana — R$20
+📅 Leitura Mensal — R$25
+🔍 Área da Vida — R$15
+🌀 Mapa Astral — R$30
+🔢 Numerologia — R$25
+❤️ Jogo: Tem Volta? — R$20
+✨ Magias Espirituais — Valores variados
 
 CHAVE PIX: 48999017075 (Rosani)
 
-Sempre termine com uma pergunta ou convite para continuar a conversa.`;
+Sua missão é orientar, confortar e iluminar. Sempre termine com uma pergunta ou convite para aprofundar a conversa.`;
 
 export async function getGeminiResponse(messages) {
     console.log('🔮 Sarah Kali - Iniciando consulta espiritual...');
@@ -51,7 +57,7 @@ export async function getGeminiResponse(messages) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: "mixtral-8x7b-32768", // Modelo estável
+                model: "mixtral-8x7b-32768",
                 messages: [
                     {
                         role: "system",
@@ -65,22 +71,21 @@ export async function getGeminiResponse(messages) {
                 temperature: 0.7,
                 max_tokens: 800,
                 top_p: 0.9,
-            }),
-            timeout: 30000 // 30 segundos timeout
+            })
         });
 
         console.log(`📊 Status da resposta: ${response.status}`);
 
         if (!response.ok) {
-            const errorData = await response.text();
-            console.error(`❌ Erro API: ${response.status}`, errorData);
+            const errorText = await response.text();
+            console.error(`❌ Erro API: ${response.status}`, errorText);
             
             if (response.status === 401) {
-                return "Minha conexão espiritual está instável... 🔮";
+                return "Minha conexão espiritual está instável no momento... 🔮";
             } else if (response.status === 429) {
-                return "O universo está muito movimentado agora... Tente novamente em alguns minutos. 💫";
+                return "O universo está muito movimentado agora... Muitas almas buscando orientação. Tente novamente em alguns minutos. 💫";
             } else {
-                return "As energias estão se reorganizando... Por favor, tente novamente. ✨";
+                return "As energias cósmicas estão se reorganizando... Por favor, tente novamente. ✨";
             }
         }
 
@@ -98,21 +103,21 @@ export async function getGeminiResponse(messages) {
         const emojisEspirituais = ['✨', '🔮', '💫', '🌙', '⭐', '🙏'];
         const emojiAleatorio = emojisEspirituais[Math.floor(Math.random() * emojisEspirituais.length)];
         
-        if (!resposta.includes('✨') && !resposta.includes('🔮')) {
+        if (!resposta.includes('✨') && !resposta.includes('🔮') && !resposta.includes('💫')) {
             resposta += ` ${emojiAleatorio}`;
         }
 
         return resposta;
 
     } catch (error) {
-        console.error('❌ Erro durante consulta:', error.message);
+        console.error('❌ Erro durante consulta espiritual:', error.message);
         
         // Respostas de fallback melhoradas
         const respostasFallback = [
             "As cartas estão se misturando... Conte-me mais sobre sua questão? 💫",
-            "Estou sintonizando as vibrações... Poderia repetir sua pergunta? ✨", 
+            "Estou sintonizando as vibrações do universo... Poderia repetir sua pergunta? ✨", 
             "O universo pede um momento de pausa... Em que mais posso ajudá-la? 🔮",
-            "Minha intuição está se ajustando... Compartilhe novamente seus pensamentos? 🌙"
+            "Minha intuição está se ajustando às suas energias... Compartilhe novamente seus pensamentos? 🌙"
         ];
         
         return respostasFallback[Math.floor(Math.random() * respostasFallback.length)];
