@@ -31,21 +31,23 @@ SERVIÇOS ESPIRITUAIS:
 FORMA DE PAGAMENTO:
 📱 CHAVE PIX: 48999017075 (Rosani)
 
-DIRETRIZES DE RESPOSTA:
-• Sempre seja calorosa e acolhedora
+DIRETRIZES DE RESPOSTA IMPORTANTES:
+• MANTENHA o contexto da conversa - lembre-se do que foi dito anteriormente
+• CONTINUE a linha de pensamento da conversa
+• NUNCA corte respostas no meio - sempre complete seus pensamentos
+• Seja completa mas concisa - equilibre profundidade com clareza
 • Use emojis relevantes naturalmente (máximo 3-4 por resposta)
 • Mostre compreensão emocional profunda
-• Ofereça insights espirituais práticos
 • Termine convidando para aprofundar a conversa
 • Mantenha tom místico porém acessível
-• Nunca seja muito técnica ou formal
+• Estruture respostas em tópicos curtos para melhor legibilidade
 
 SUA MISSÃO: Orientar, confortar e iluminar almas buscando direção espiritual.`;
 
 /**
- * Função principal para obter resposta da OpenAI (GPT-4)
- * @param {Array} messages - Array de mensagens do chat
- * @returns {Promise<string>} - Resposta da Sarah Kali
+ * Função principal para obter resposta da OpenAI (GPT-4) com contexto completo
+ * @param {Array} messages - Array completo do histórico de mensagens
+ * @returns {Promise<string>} - Resposta contextual da Sarah Kali
  */
 export async function getOpenAIResponse(messages) {
     console.log('🔮 Sarah Kali - Iniciando consulta espiritual com GPT-4...');
@@ -57,40 +59,47 @@ export async function getOpenAIResponse(messages) {
     }
 
     try {
-        // Extrai a última mensagem do usuário
-        const lastMessage = Array.isArray(messages) && messages.length > 0 
-            ? messages[messages.length - 1]?.content || ''
-            : '';
-
-        if (!lastMessage.trim()) {
-            console.log('⚠️ Mensagem vazia recebida');
+        // Verifica se há mensagens
+        if (!messages || !Array.isArray(messages) || messages.length === 0) {
+            console.log('⚠️ Nenhuma mensagem recebida');
             return "Querida alma, compartilhe sua questão comigo... O universo aguarda suas palavras. ✨";
         }
 
-        console.log(`📨 Consulta recebida: "${lastMessage.substring(0, 50)}..."`);
+        console.log(`📨 Processando ${messages.length} mensagens de histórico`);
+        
+        // Log do histórico para debugging
+        messages.forEach((msg, index) => {
+            console.log(`   ${index + 1}. [${msg.role}] ${msg.content.substring(0, 50)}...`);
+        });
 
-        // Chamada para API OpenAI com GPT-4
+        // Prepara o array de mensagens para a OpenAI mantendo TODO o histórico
+        const mensagensCompletas = [
+            {
+                role: "system",
+                content: SARAH_PERSONALITY
+            },
+            ...messages.map(msg => ({
+                role: msg.role,
+                content: msg.content
+            }))
+        ];
+
+        console.log(`📊 Total de mensagens no contexto: ${mensagensCompletas.length}`);
+
+        // Chamada para API OpenAI com GPT-4 - COM HISTÓRICO COMPLETO
         const completion = await openai.chat.completions.create({
-            model: "gpt-4", // ✅ Usando GPT-4
-            messages: [
-                {
-                    role: "system",
-                    content: SARAH_PERSONALITY
-                },
-                {
-                    role: "user", 
-                    content: lastMessage
-                }
-            ],
-            temperature: 0.8, // Levemente aumentado para mais criatividade
-            max_tokens: 1000, // Aumentado para respostas mais completas
+            model: "gpt-4",
+            messages: mensagensCompletas,
+            temperature: 0.7,
+            max_tokens: 1500,
             top_p: 0.9,
-            frequency_penalty: 0.1, // Adicionado para variar expressões
-            presence_penalty: 0.1, // Adicionado para manter conversa natural
+            frequency_penalty: 0.1,
+            presence_penalty: 0.1,
         });
 
         console.log(`📊 Resposta GPT-4 gerada com sucesso`);
         console.log(`🔢 Tokens usados: ${completion.usage?.total_tokens || 'N/A'}`);
+        console.log(`📝 Comprimento da resposta: ${completion.choices[0]?.message?.content?.length || 0} caracteres`);
 
         if (!completion.choices || !completion.choices[0] || !completion.choices[0].message) {
             console.error('❌ Resposta inválida da API:', completion);
@@ -98,6 +107,14 @@ export async function getOpenAIResponse(messages) {
         }
 
         let resposta = completion.choices[0].message.content.trim();
+        
+        // Verifica se a resposta foi cortada
+        const respostaCortada = isRespostaCortada(resposta);
+        if (respostaCortada) {
+            console.warn('⚠️ Resposta possivelmente cortada');
+            resposta = resposta.replace(/[,;:]$/, '.') + ' ✨';
+        }
+
         console.log(`✅ Resposta GPT-4: ${resposta.substring(0, 100)}...`);
 
         // Verificação e enriquecimento espiritual da resposta
@@ -108,13 +125,12 @@ export async function getOpenAIResponse(messages) {
     } catch (error) {
         console.error('❌ Erro durante consulta espiritual com GPT-4:', error.message);
         
-        // Respostas de fallback específicas para GPT-4
+        // Respostas de fallback que mantém o contexto
         const respostasFallback = [
-            "As cartas cósmicas estão se realinhando... Conte-me mais sobre sua questão, querida alma? 💫",
-            "Estou sintonizando as vibrações mais profundas do universo... Poderia compartilhar novamente seus pensamentos? ✨", 
-            "O universo pede um momento de reflexão... Em que mais posso iluminar seu caminho hoje? 🔮",
-            "Minha intuição está se conectando com energias superiores... Compartilhe sua jornada comigo? 🌙",
-            "As estrelas estão se comunicando... Vamos aprofundar essa conexão espiritual? ⭐"
+            "Estou sentindo que precisamos aprofundar essa conexão... Poderia me contar mais sobre seus pensamentos? 💫",
+            "Vamos continuar nossa jornada espiritual... Em que mais posso iluminar seu caminho hoje? ✨", 
+            "Estou aqui para acompanhá-la nessa busca... O que mais gostaria de explorar? 🔮",
+            "Sua energia está se conectando com a minha intuição... Vamos seguir com essa conversa espiritual? 🌙"
         ];
         
         return respostasFallback[Math.floor(Math.random() * respostasFallback.length)];
@@ -122,19 +138,36 @@ export async function getOpenAIResponse(messages) {
 }
 
 /**
- * Função para enriquecer respostas com toque espiritual
- * @param {string} resposta - Resposta original da IA
+ * Detecta se a resposta foi cortada no meio do pensamento
+ * @param {string} resposta - Resposta a ser verificada
+ * @returns {boolean} - True se a resposta foi cortada
+ */
+function isRespostaCortada(resposta) {
+    if (!resposta || resposta.length < 50) return false;
+    
+    const ultimosCaracteres = resposta.slice(-20);
+    const sinaisDeCorte = [
+        /[,;:]$/i,
+        / e$/i,
+        / mas$/i,
+        / porém$/i,
+        / contudo$/i,
+        / no entanto$/i
+    ];
+    
+    return sinaisDeCorte.some(pattern => pattern.test(ultimosCaracteres));
+}
+
+/**
+ * Enriquece a resposta com elementos espirituais
+ * @param {string} resposta - Resposta original
  * @returns {string} - Resposta enriquecida
  */
 function enriquecerRespostaEspiritual(resposta) {
     const emojisEspirituais = ['✨', '🔮', '💫', '🌙', '⭐', '🙏', '🌌', '🕯️'];
-    const frasesEspirituais = [
-        "Que as estrelas guiem seu caminho",
-        "O universo conspira a seu favor",
-        "Sua alma tem sabedoria ancestral",
-        "As energias cósmicas estão com você",
-        "Sua luz interior brilha intensamente"
-    ];
+    
+    // Remove possíveis cortes no final
+    resposta = resposta.replace(/[,;:]$/, '').trim();
     
     // Adiciona emoji se não tiver muitos
     const emojiCount = (resposta.match(/✨|🔮|💫|🌙|⭐|🙏|🌌|🕯️/g) || []).length;
@@ -143,10 +176,9 @@ function enriquecerRespostaEspiritual(resposta) {
         resposta += ` ${emojiAleatorio}`;
     }
     
-    // Garante que termina com tom convidativo se muito curta
-    if (resposta.length < 150 && !resposta.includes('?')) {
-        const fraseAleatoria = frasesEspirituais[Math.floor(Math.random() * frasesEspirituais.length)];
-        resposta += ` ${fraseAleatoria}. Em que mais posso ajudá-la hoje? 💫`;
+    // Garante que termina com pontuação adequada
+    if (!/[.!?]$/.test(resposta)) {
+        resposta += '.';
     }
     
     return resposta;

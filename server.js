@@ -65,6 +65,8 @@ app.post('/api/chat', async (req, res) => {
             });
         }
 
+        console.log(`📊 Histórico recebido: ${messages.length} mensagens`);
+
         const lastMessage = messages[messages.length - 1];
         const userMessage = lastMessage?.content?.trim() || '';
 
@@ -78,7 +80,7 @@ app.post('/api/chat', async (req, res) => {
 
         console.log(`📨 Processando consulta: "${userMessage.substring(0, 50)}..."`);
 
-        // ✅ PROCESSAMENTO COM OPENAI GPT-4
+        // ✅ PROCESSAMENTO COM OPENAI GPT-4 (AGORA COM CONTEXTO COMPLETO)
         const response = await getOpenAIResponse(messages);
         
         const processingTime = Date.now() - startTime;
@@ -136,22 +138,5 @@ process.on('SIGINT', () => {
     server.close(() => {
         console.log('>>> ✅ Servidor encerrado com sucesso');
         process.exit(0);
-    });
-});
-
-// ======================
-// 🎯  TRATAMENTO DE ERROS NÃO CAPTURADOS
-// ======================
-process.on('unhandledRejection', (err) => {
-    console.error('>>> ❌ Erro não tratado:', err);
-    server.close(() => {
-        process.exit(1);
-    });
-});
-
-process.on('uncaughtException', (err) => {
-    console.error('>>> ❌ Exceção não capturada:', err);
-    server.close(() => {
-        process.exit(1);
     });
 });
