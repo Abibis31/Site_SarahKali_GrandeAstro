@@ -30,19 +30,30 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Rota do Chat
+// Rota do Chat - VERSÃO CORRIGIDA
 app.post('/api/chat', async (req, res) => {
     try {
         const { messages } = req.body;
         
-        // Verifica se a mensagem foi fornecida
-        if (!messages || !messages.trim()) {
+        // ✅ CORREÇÃO: Verifica se messages existe e é um array válido
+        if (!messages || !Array.isArray(messages) || messages.length === 0) {
+            return res.status(400).json({ 
+                message: "Por favor, envie uma mensagem para conversarmos! 💫" 
+            });
+        }
+
+        // ✅ CORREÇÃO: Pega a última mensagem do array
+        const lastMessage = messages[messages.length - 1];
+        const userMessage = lastMessage?.content || '';
+        
+        // ✅ CORREÇÃO: Agora sim verifica se tem texto
+        if (!userMessage.trim()) {
             return res.status(400).json({ 
                 message: "Por favor, envie uma mensagem para conversarmos! 💫" 
             });
         }
         
-        console.log(`📨 Enviando para API: ${messages}`);
+        console.log(`📨 Enviando para API: ${userMessage}`);
         const response = await getGeminiResponse(messages);
         
         res.json({ message: response });
@@ -54,7 +65,6 @@ app.post('/api/chat', async (req, res) => {
         });
     }
 });
-
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`>>> Sarah Kali Chat rodando na porta: ${PORT}`);
