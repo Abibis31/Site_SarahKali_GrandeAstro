@@ -15,28 +15,25 @@ SUA PERSONALIDADE:
 - Usa emojis com moderação (1-2 por resposta)
 - Mantém conversas fluidas e contextualizadas
 
-FLUXO DE ATENDIMENTO:
-1. Quando alguém pedir MAPA ASTRAL:
-   - Peça: data, horário e cidade de nascimento
-   - Após receber, faça a análise astral completa
+FLUXO DE ATENDIMENTO CRÍTICO:
+1. Quando alguém pedir NUMEROLOGIA e fornecer nome completo + data de nascimento:
+   - FAÇA a análise numerológica COMPLETA imediatamente
+   - Não peça os dados novamente
+   - Não peça confirmações extras
 
-2. Quando alguém pedir NUMEROLOGIA:
-   - Peça: nome completo e data de nascimento
-   - Após receber, faça a análise numerológica
+2. Quando alguém pedir MAPA ASTRAL e fornecer data + horário + local de nascimento:
+   - FAÇA a análise astral COMPLETA imediatamente
+   - Não peça os dados novamente
+   - Não peça confirmações extras
 
-3. Para outras questões:
-   - Responda de forma direta e útil
-   - Mantenha o contexto da conversa
-   - Seja natural como em uma conversa real
+3. Se o usuário já forneceu os dados em mensagens anteriores, use-os para fazer a análise.
 
 IMPORTANTE: SEMPRE mantenha o contexto da conversa anterior. Lembre-se do que foi discutido e continue naturalmente.
 
-EVITE:
-- Saudações muito longas ou formais
-- Linguagem excessivamente poética
-- Repetir a mesma estrutura de resposta
-- Excesso de emojis
-- Mensagens comerciais ou pedidos de pagamento
+NUNCA:
+- Peça os dados novamente se já foram fornecidos
+- Peça confirmações desnecessárias
+- Entre em loops de repetição
 
 SEJA:
 - Natural e conversacional
@@ -52,12 +49,13 @@ function detectarServicoSolicitado(mensagem) {
     
     if (mensagemLower.includes('mapa astral') || mensagemLower.includes('astral') || 
         mensagemLower.includes('signos') || mensagemLower.includes('zodíaco') ||
-        mensagemLower.includes('planetas') || mensagemLower.includes('casas astrológicas')) {
+        mensagemLower.includes('planetas') || mensagemUpper.includes('casas astrológicas')) {
         return 'mapa_astral';
     }
     
     if (mensagemLower.includes('numerologia') || mensagemLower.includes('número') || 
-        mensagemLower.includes('caminho de vida') || mensagemLower.includes('vibração')) {
+        mensagemLower.includes('caminho de vida') || mensagemLower.includes('vibração') ||
+        mensagemLower.includes('numerológica')) {
         return 'numerologia';
     }
     
@@ -65,28 +63,44 @@ function detectarServicoSolicitado(mensagem) {
 }
 
 /**
- * Função para verificar se a mensagem contém dados para o serviço solicitado
+ * Função para verificar se a mensagem contém dados para numerologia
  */
-function verificarDadosCompletos(servico, mensagem, historico) {
-    const mensagemLower = mensagem.toLowerCase();
+function verificarDadosNumerologia(mensagem) {
+    console.log('🔍 Verificando dados para numerologia...');
     
-    if (servico === 'mapa_astral') {
-        // Verifica se a mensagem atual parece conter dados de nascimento
-        const temData = /\d{1,2}\/\d{1,2}\/\d{4}|\d{1,2} de [a-z]+ de \d{4}/i.test(mensagem);
-        const temHorario = /\d{1,2}[:h]\d{2}|\d{1,2}\s*(h|horas)/i.test(mensagem);
-        const temLocal = /(em|de|na|no) [a-z]+/i.test(mensagem);
-        
-        return temData && temHorario && temLocal;
-    }
+    // Verifica se tem data de nascimento (formato DD/MM/AAAA)
+    const temData = /\d{1,2}\/\d{1,2}\/\d{4}/.test(mensagem);
     
-    if (servico === 'numerologia') {
-        const temNomeCompleto = /[a-z]{3,} [a-z]{3,} [a-z]{3,}/i.test(mensagem);
-        const temData = /\d{1,2}\/\d{1,2}\/\d{4}|\d{1,2} de [a-z]+ de \d{4}/i.test(mensagem);
-        
-        return temNomeCompleto && temData;
-    }
+    // Verifica se tem nome completo (pelo menos 2 palavras com mais de 3 letras)
+    const palavras = mensagem.split(/\s+/);
+    const palavrasComTamanho = palavras.filter(palavra => palavra.length >= 3);
+    const temNome = palavrasComTamanho.length >= 2;
     
-    return false;
+    console.log(`📊 Data detectada: ${temData}, Nome detectado: ${temNome}`);
+    console.log(`📝 Palavras com tamanho: ${palavrasComTamanho.length}`);
+    
+    return temData && temNome;
+}
+
+/**
+ * Função para verificar se a mensagem contém dados para mapa astral
+ */
+function verificarDadosMapaAstral(mensagem) {
+    console.log('🔍 Verificando dados para mapa astral...');
+    
+    // Verifica se tem data de nascimento
+    const temData = /\d{1,2}\/\d{1,2}\/\d{4}/.test(mensagem);
+    
+    // Verifica se tem horário (formato HH:MM ou HHhMM)
+    const temHorario = /\d{1,2}[:h]\d{2}/.test(mensagem);
+    
+    // Verifica se tem local (pelo menos uma palavra que parece cidade/estado)
+    const temLocal = /(são paulo|rio de janeiro|minas|bahia|brasília|porto alegre|curitiba|fortaleza|recife|belo horizonte|salvador|manaus)/i.test(mensagem) || 
+                    /(sp|rj|mg|rs|pr|sc|ba|pe|ce|df|go|mt|ms|am|pa)/i.test(mensagem);
+    
+    console.log(`📊 Data: ${temData}, Horário: ${temHorario}, Local: ${temLocal}`);
+    
+    return temData && temHorario && temLocal;
 }
 
 /**
@@ -110,6 +124,57 @@ function jaPediuDados(servico, historico) {
     return false;
 }
 
+/**
+ * Extrai dados da mensagem para criar um prompt específico
+ */
+function criarPromptComDados(servico, mensagem, historico) {
+    if (servico === 'numerologia') {
+        // Extrai a data
+        const dataMatch = mensagem.match(/\d{1,2}\/\d{1,2}\/\d{4}/);
+        const data = dataMatch ? dataMatch[0] : 'data não encontrada';
+        
+        // Extrai o nome (assume que as primeiras palavras são o nome)
+        const palavras = mensagem.split(/\s+/).filter(palavra => palavra.length >= 3);
+        const nome = palavras.slice(0, 3).join(' '); // Pega até 3 palavras como nome
+        
+        return `O usuário forneceu os dados para numerologia:
+Nome: ${nome}
+Data de nascimento: ${data}
+
+FAÇA uma análise numerológica COMPLETA e detalhada baseada nestes dados. Analise:
+- Caminho de vida
+- Número de expressão
+- Número de alma
+- Anos pessoais
+- Desafios e oportunidades
+
+Seja específico e detalhado na análise.`;
+    }
+    
+    if (servico === 'mapa_astral') {
+        const dataMatch = mensagem.match(/\d{1,2}\/\d{1,2}\/\d{4}/);
+        const data = dataMatch ? dataMatch[0] : 'data não encontrada';
+        
+        const horarioMatch = mensagem.match(/\d{1,2}[:h]\d{2}/);
+        const horario = horarioMatch ? horarioMatch[0] : 'horário não encontrado';
+        
+        return `O usuário forneceu os dados para mapa astral:
+Data de nascimento: ${data}
+Horário de nascimento: ${horario}
+
+FAÇA uma análise astral COMPLETA e detalhada baseada nestes dados. Analise:
+- Signo solar, lunar e ascendente
+- Posições planetárias principais
+- Casas astrológicas relevantes
+- Aspectos importantes
+- Tendências e características marcantes
+
+Seja específico e detalhado na análise.`;
+    }
+    
+    return null;
+}
+
 export async function getOpenAIResponse(messages) {
     console.log('🔮 Sarah Kali - Processando mensagem...');
     
@@ -126,24 +191,38 @@ export async function getOpenAIResponse(messages) {
 
         // Pega a última mensagem do usuário e o histórico completo
         const lastMessage = messages[messages.length - 1]?.content || '';
-        const historicoCompleto = messages; // AGORA usamos TODO o histórico
+        const historicoCompleto = messages;
 
         if (!lastMessage.trim()) {
             return "Conte-me como posso ajudar você hoje.";
         }
 
-        console.log(`📨 Mensagem: "${lastMessage.substring(0, 50)}..."`);
+        console.log(`📨 Mensagem: "${lastMessage.substring(0, 100)}..."`);
         console.log(`📊 Histórico completo: ${historicoCompleto.length} mensagens`);
 
         // Detecta se é um serviço específico
         const servico = detectarServicoSolicitado(lastMessage);
-        
-        // Verifica se já temos dados para processar o serviço
-        const dadosCompletos = verificarDadosCompletos(servico, lastMessage, historicoCompleto);
+        console.log(`🎯 Serviço detectado: ${servico}`);
 
-        console.log(`🎯 Serviço detectado: ${servico}, Dados completos: ${dadosCompletos}`);
+        // Verifica se temos dados completos para o serviço
+        let dadosCompletos = false;
+        let promptEspecifico = null;
 
-        // Se detectamos um serviço específico mas não temos dados ainda, forçamos um prompt específico
+        if (servico === 'numerologia') {
+            dadosCompletos = verificarDadosNumerologia(lastMessage);
+            if (dadosCompletos) {
+                promptEspecifico = criarPromptComDados('numerologia', lastMessage, historicoCompleto);
+                console.log('✅ Dados completos para numerologia - criando prompt específico');
+            }
+        } else if (servico === 'mapa_astral') {
+            dadosCompletos = verificarDadosMapaAstral(lastMessage);
+            if (dadosCompletos) {
+                promptEspecifico = criarPromptComDados('mapa_astral', lastMessage, historicoCompleto);
+                console.log('✅ Dados completos para mapa astral - criando prompt específico');
+            }
+        }
+
+        // Se detectamos um serviço específico mas não temos dados ainda
         if (servico !== 'geral' && !dadosCompletos) {
             const jaPediu = jaPediuDados(servico, historicoCompleto);
             
@@ -156,11 +235,11 @@ export async function getOpenAIResponse(messages) {
                     return "Perfeito! Para fazer sua análise numerológica, preciso de:\n\n• Seu nome completo\n• Sua data de nascimento (dia/mês/ano)\n\nPode me informar esses dados?";
                 }
             }
-            // Se já pediu os dados antes, deixamos o fluxo normal continuar com o histórico completo
+            // Se já pediu os dados antes, deixa o fluxo normal continuar
         }
 
-        // ✅✅✅ CORREÇÃO PRINCIPAL: SEMPRE enviamos TODO o histórico para a OpenAI
-        const mensagensCompletas = [
+        // Prepara mensagens para a OpenAI
+        let mensagensCompletas = [
             {
                 role: "system",
                 content: SARAH_PERSONALITY
@@ -171,6 +250,14 @@ export async function getOpenAIResponse(messages) {
             }))
         ];
 
+        // Se temos dados completos, adiciona um prompt específico no final
+        if (promptEspecifico) {
+            mensagensCompletas.push({
+                role: "system",
+                content: promptEspecifico
+            });
+        }
+
         console.log(`📤 Enviando ${mensagensCompletas.length} mensagens para OpenAI`);
 
         // Chamada para API OpenAI com HISTÓRICO COMPLETO
@@ -178,7 +265,7 @@ export async function getOpenAIResponse(messages) {
             model: "gpt-4",
             messages: mensagensCompletas,
             temperature: 0.7,
-            max_tokens: 1200,
+            max_tokens: 1500,
             top_p: 0.9,
         });
 
@@ -193,7 +280,7 @@ export async function getOpenAIResponse(messages) {
         // Limpeza e otimização da resposta
         resposta = otimizarResposta(resposta);
 
-        console.log(`✅ Resposta: ${resposta.substring(0, 80)}...`);
+        console.log(`✅ Resposta: ${resposta.substring(0, 100)}...`);
 
         return resposta;
 
@@ -217,13 +304,13 @@ function otimizarResposta(resposta) {
     // Remove saudações muito longas
     resposta = resposta.replace(/^(Olá, (querido|querida|amigo|amiga|alma|viajante).+?\..+?\.)/i, '');
     
-    // Remove repetições de emojis (mais de 3 seguidos)
+    // Remove repetições de emojis (mais de 2 seguidos)
     resposta = resposta.replace(/([✨🔮💫🌙⭐🙏]){3,}/g, '$1');
     
     // Garante que não comece com vírgula ou ponto
     resposta = resposta.replace(/^[.,]\s*/, '');
     
-    // Se a resposta estiver muito curta após limpeza, adiciona um toque natural
+    // Se a resposta estiver muito curta após limpeza
     if (resposta.length < 10) {
         return "Como posso ajudar você?";
     }
