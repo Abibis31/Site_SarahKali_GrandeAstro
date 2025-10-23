@@ -1,14 +1,29 @@
 {
   "name": "sarah-kali-chat",
   "version": "1.0.0",
+  "description": "Chat espiritual da Sarah Kali - Cartomante e orientadora espiritual",
   "type": "module",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "dev": "node server.js",
-    "start": "node server.js"
+    "test": "echo \"No tests yet\" && exit 0"
   },
+  "keywords": [
+    "chat",
+    "spiritual",
+    "tarot",
+    "astrology",
+    "api"
+  ],
+  "author": "Seu Nome",
+  "license": "MIT",
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
-    "express": "^4.18.2"
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
