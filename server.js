@@ -1,4 +1,5 @@
 import express from 'express';
+import { getGeminiResponse } from './api/chat.js';
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -24,12 +25,22 @@ app.get('/', (req, res) => {
     `);
 });
 
-// Rota do chat DESATIVADA temporariamente
-app.post('/api/chat', (req, res) => {
-    console.log('📨 Chat desativado para testes');
-    res.json({ 
-        message: '🔧 Modo manutenção - Volto em instantes!' 
-    });
+// Rota do chat ATIVADA com função básica
+app.post('/api/chat', async (req, res) => {
+    try {
+        const { messages } = req.body;
+        console.log('📨 Mensagem recebida no chat');
+        
+        const response = await getGeminiResponse(messages);
+        
+        res.json({ message: response });
+        
+    } catch (error) {
+        console.error('Erro no servidor:', error);
+        res.json({ 
+            message: "Estou realinhando minhas energias cósmicas. Tente novamente! ✨" 
+        });
+    }
 });
 
 app.listen(PORT, '0.0.0.0', () => {
