@@ -1,17 +1,22 @@
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_URL = process.env.GROQ_URL;
+import OpenAI from 'openai';
 
-// Personalidade da Sarah Kali - Versão Melhorada
+// Configuração do cliente OpenAI
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Personalidade da Sarah Kali - Versão Otimizada para GPT-4
 const SARAH_PERSONALITY = `Você é Sarah Kali, uma cartomante espiritual, sábia e acolhedora com mais de 15 anos de experiência em tarot, astrologia e magias espirituais.
 
-SEU ESTILO:
-💫 Fale de forma mística mas acessível
-🔮 Use emojis espirituais naturalmente
-✨ Seja empática, intuitiva e acolhedora
-🌙 Ofereça orientação espiritual genuína
-📿 Mostre sabedoria ancestral
+CARACTERÍSTICAS PRINCIPAIS:
+🎴 Cartomante espiritual e conselheira intuitiva
+💫 Fala de forma mística mas acessível  
+🔮 Usa emojis espirituais naturalmente
+✨ Empática, intuitiva e extremamente acolhedora
+🌙 Conecta com sabedoria ancestral e energia cósmica
+📿 Oferece orientação espiritual genuína e prática
 
-PRINCIPAIS SERVIÇOS:
+SERVIÇOS ESPIRITUAIS:
 🔮 3 Perguntas — R$10
 🔮 7 Perguntas — R$20  
 💖 Templo de Afrodite (Amor) — R$30
@@ -23,17 +28,32 @@ PRINCIPAIS SERVIÇOS:
 ❤️ Jogo: Tem Volta? — R$20
 ✨ Magias Espirituais — Valores variados
 
-CHAVE PIX: 48999017075 (Rosani)
+FORMA DE PAGAMENTO:
+📱 CHAVE PIX: 48999017075 (Rosani)
 
-Sua missão é orientar, confortar e iluminar. Sempre termine com uma pergunta ou convite para aprofundar a conversa.`;
+DIRETRIZES DE RESPOSTA:
+• Sempre seja calorosa e acolhedora
+• Use emojis relevantes naturalmente (máximo 3-4 por resposta)
+• Mostre compreensão emocional profunda
+• Ofereça insights espirituais práticos
+• Termine convidando para aprofundar a conversa
+• Mantenha tom místico porém acessível
+• Nunca seja muito técnica ou formal
 
-export async function getGeminiResponse(messages) {
-    console.log('🔮 Sarah Kali - Iniciando consulta espiritual...');
+SUA MISSÃO: Orientar, confortar e iluminar almas buscando direção espiritual.`;
+
+/**
+ * Função principal para obter resposta da OpenAI (GPT-4)
+ * @param {Array} messages - Array de mensagens do chat
+ * @returns {Promise<string>} - Resposta da Sarah Kali
+ */
+export async function getOpenAIResponse(messages) {
+    console.log('🔮 Sarah Kali - Iniciando consulta espiritual com GPT-4...');
     
     // Verificação CRÍTICA da API Key
-    if (!GROQ_API_KEY) {
-        console.error('❌ CRÍTICO: GROQ_API_KEY não encontrada');
-        return "Estou realinhando minhas energias cósmicas... Por favor, volte em alguns instantes. 🔮";
+    if (!process.env.OPENAI_API_KEY) {
+        console.error('❌ CRÍTICO: OPENAI_API_KEY não encontrada');
+        return "Estou realinhando minhas energias cósmicas... Por favor, configure minha conexão espiritual. 🔮";
     }
 
     try {
@@ -44,82 +64,93 @@ export async function getGeminiResponse(messages) {
 
         if (!lastMessage.trim()) {
             console.log('⚠️ Mensagem vazia recebida');
-            return "Querida alma, compartilhe sua questão comigo... ✨";
+            return "Querida alma, compartilhe sua questão comigo... O universo aguarda suas palavras. ✨";
         }
 
         console.log(`📨 Consulta recebida: "${lastMessage.substring(0, 50)}..."`);
 
-        // Chamada para API Groq
-        const response = await fetch(GROQ_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${GROQ_API_KEY}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                model: "llama-3.1-8b-instant",
-                messages: [
-                    {
-                        role: "system",
-                        content: SARAH_PERSONALITY
-                    },
-                    {
-                        role: "user", 
-                        content: lastMessage
-                    }
-                ],
-                temperature: 0.7,
-                max_tokens: 800,
-                top_p: 0.9,
-            })
+        // Chamada para API OpenAI com GPT-4
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4", // ✅ Usando GPT-4
+            messages: [
+                {
+                    role: "system",
+                    content: SARAH_PERSONALITY
+                },
+                {
+                    role: "user", 
+                    content: lastMessage
+                }
+            ],
+            temperature: 0.8, // Levemente aumentado para mais criatividade
+            max_tokens: 1000, // Aumentado para respostas mais completas
+            top_p: 0.9,
+            frequency_penalty: 0.1, // Adicionado para variar expressões
+            presence_penalty: 0.1, // Adicionado para manter conversa natural
         });
 
-        console.log(`📊 Status da resposta: ${response.status}`);
+        console.log(`📊 Resposta GPT-4 gerada com sucesso`);
+        console.log(`🔢 Tokens usados: ${completion.usage?.total_tokens || 'N/A'}`);
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`❌ Erro API: ${response.status}`, errorText);
-            
-            if (response.status === 401) {
-                return "Minha conexão espiritual está instável no momento... 🔮";
-            } else if (response.status === 429) {
-                return "O universo está muito movimentado agora... Muitas almas buscando orientação. Tente novamente em alguns minutos. 💫";
-            } else {
-                return "As energias cósmicas estão se reorganizando... Por favor, tente novamente. ✨";
-            }
-        }
-
-        const data = await response.json();
-        
-        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-            console.error('❌ Resposta inválida da API:', data);
+        if (!completion.choices || !completion.choices[0] || !completion.choices[0].message) {
+            console.error('❌ Resposta inválida da API:', completion);
             throw new Error('Resposta da API incompleta');
         }
 
-        let resposta = data.choices[0].message.content;
-        console.log(`✅ Resposta gerada: ${resposta.substring(0, 80)}...`);
+        let resposta = completion.choices[0].message.content.trim();
+        console.log(`✅ Resposta GPT-4: ${resposta.substring(0, 100)}...`);
 
-        // Garante que a resposta tenha um toque espiritual
-        const emojisEspirituais = ['✨', '🔮', '💫', '🌙', '⭐', '🙏'];
-        const emojiAleatorio = emojisEspirituais[Math.floor(Math.random() * emojisEspirituais.length)];
-        
-        if (!resposta.includes('✨') && !resposta.includes('🔮') && !resposta.includes('💫')) {
-            resposta += ` ${emojiAleatorio}`;
-        }
+        // Verificação e enriquecimento espiritual da resposta
+        resposta = enriquecerRespostaEspiritual(resposta);
 
         return resposta;
 
     } catch (error) {
-        console.error('❌ Erro durante consulta espiritual:', error.message);
+        console.error('❌ Erro durante consulta espiritual com GPT-4:', error.message);
         
-        // Respostas de fallback melhoradas
+        // Respostas de fallback específicas para GPT-4
         const respostasFallback = [
-            "As cartas estão se misturando... Conte-me mais sobre sua questão? 💫",
-            "Estou sintonizando as vibrações do universo... Poderia repetir sua pergunta? ✨", 
-            "O universo pede um momento de pausa... Em que mais posso ajudá-la? 🔮",
-            "Minha intuição está se ajustando às suas energias... Compartilhe novamente seus pensamentos? 🌙"
+            "As cartas cósmicas estão se realinhando... Conte-me mais sobre sua questão, querida alma? 💫",
+            "Estou sintonizando as vibrações mais profundas do universo... Poderia compartilhar novamente seus pensamentos? ✨", 
+            "O universo pede um momento de reflexão... Em que mais posso iluminar seu caminho hoje? 🔮",
+            "Minha intuição está se conectando com energias superiores... Compartilhe sua jornada comigo? 🌙",
+            "As estrelas estão se comunicando... Vamos aprofundar essa conexão espiritual? ⭐"
         ];
         
         return respostasFallback[Math.floor(Math.random() * respostasFallback.length)];
     }
 }
+
+/**
+ * Função para enriquecer respostas com toque espiritual
+ * @param {string} resposta - Resposta original da IA
+ * @returns {string} - Resposta enriquecida
+ */
+function enriquecerRespostaEspiritual(resposta) {
+    const emojisEspirituais = ['✨', '🔮', '💫', '🌙', '⭐', '🙏', '🌌', '🕯️'];
+    const frasesEspirituais = [
+        "Que as estrelas guiem seu caminho",
+        "O universo conspira a seu favor",
+        "Sua alma tem sabedoria ancestral",
+        "As energias cósmicas estão com você",
+        "Sua luz interior brilha intensamente"
+    ];
+    
+    // Adiciona emoji se não tiver muitos
+    const emojiCount = (resposta.match(/✨|🔮|💫|🌙|⭐|🙏|🌌|🕯️/g) || []).length;
+    if (emojiCount < 2) {
+        const emojiAleatorio = emojisEspirituais[Math.floor(Math.random() * emojisEspirituais.length)];
+        resposta += ` ${emojiAleatorio}`;
+    }
+    
+    // Garante que termina com tom convidativo se muito curta
+    if (resposta.length < 150 && !resposta.includes('?')) {
+        const fraseAleatoria = frasesEspirituais[Math.floor(Math.random() * frasesEspirituais.length)];
+        resposta += ` ${fraseAleatoria}. Em que mais posso ajudá-la hoje? 💫`;
+    }
+    
+    return resposta;
+}
+
+// Exportação adicional para compatibilidade com código antigo
+export { getOpenAIResponse as getGeminiResponse };
