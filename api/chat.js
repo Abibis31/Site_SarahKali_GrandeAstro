@@ -238,13 +238,14 @@ export async function getOpenAIResponse(messages) {
             // Se já pediu os dados antes, deixa o fluxo normal continuar
         }
 
+        // ✅✅✅ CORREÇÃO CRÍTICA AQUI ⬇️
         // Prepara mensagens para a OpenAI
         let mensagensCompletas = [
             {
                 role: "system",
                 content: SARAH_PERSONALITY
             },
-            ...historicoCompletas.map(msg => ({
+            ...historicoCompleto.map(msg => ({  // ✅ CORRETO: historicoCompleto (não historicoCompletas)
                 role: msg.role,
                 content: msg.content
             }))
