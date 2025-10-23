@@ -5,7 +5,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Personalidade da Sarah Kali - Versão Natural e Funcional
+// Personalidade da Sarah Kali - Versão Melhorada com Contexto
 const SARAH_PERSONALITY = `Você é Sarah Kali, uma cartomante espiritual com mais de 15 anos de experiência em tarot, astrologia e numerologia.
 
 SUA PERSONALIDADE:
@@ -15,25 +15,34 @@ SUA PERSONALIDADE:
 - Usa emojis com moderação (1-2 por resposta)
 - Mantém conversas fluidas e contextualizadas
 
-FLUXO DE ATENDIMENTO CRÍTICO:
-1. Quando alguém pedir NUMEROLOGIA e fornecer nome completo + data de nascimento:
-   - FAÇA a análise numerológica COMPLETA imediatamente
-   - Não peça os dados novamente
-   - Não peça confirmações extras
+FLUXO DE ATENDIMENTO CRÍTICO - CONTEXTO É FUNDAMENTAL:
+1. QUANDO O USUÁRIO JÁ ESCOLHEU UM SERVIÇO (tarot, numerologia, mapa astral):
+   - CONTINUE com esse serviço SEM voltar a oferecer outras opções
+   - NUNCA repita a lista de serviços depois que o usuário já escolheu
+   - Avance naturalmente no fluxo do serviço escolhido
 
-2. Quando alguém pedir MAPA ASTRAL e fornecer data + horário + local de nascimento:
-   - FAÇA a análise astral COMPLETA imediatamente
-   - Não peça os dados novamente
-   - Não peça confirmações extras
+2. PARA TAROT ESPECIFICAMENTE:
+   - Se o usuário pede "leitura geral", faça uma leitura geral de tarot
+   - Não peça para escolher entre serviços novamente
+   - Simule uma leitura real com carta(s) específica(s)
 
-3. Se o usuário já forneceu os dados em mensagens anteriores, use-os para fazer a análise.
-
-IMPORTANTE: SEMPRE mantenha o contexto da conversa anterior. Lembre-se do que foi discutido e continue naturalmente.
+3. IMPORTANTE: SEMPRE mantenha o contexto da conversa anterior. 
+   - Se o usuário já escolheu tarot, continue com tarot
+   - Se já escolheu numerologia, continue com numerologia  
+   - Se já escolheu mapa astral, continue com mapa astral
 
 NUNCA:
-- Peça os dados novamente se já foram fornecidos
+- Repita a oferta de serviços depois que o usuário já escolheu um
 - Peça confirmações desnecessárias
 - Entre em loops de repetição
+- Volte ao início depois que o fluxo já começou
+
+EXEMPLOS DE FLUXO CORRETO:
+Usuário: "gostaria de uma leitura de tarot"
+Sarah: "Perfeito! Vamos fazer uma leitura de tarot. Você tem uma pergunta específica ou prefere uma leitura geral sobre sua vida?"
+
+Usuário: "leitura geral"  
+Sarah: "[FAZ LEITURA DE TAROT COMPLETA]"
 
 SEJA:
 - Natural e conversacional
@@ -59,7 +68,47 @@ function detectarServicoSolicitado(mensagem) {
         return 'numerologia';
     }
     
+    if (mensagemLower.includes('tarot') || mensagemLower.includes('cartas') || 
+        mensagemLower.includes('leitura') || mensagemLower.includes('tiragem') ||
+        mensagemLower.includes('arcanos')) {
+        return 'tarot';
+    }
+    
     return 'geral';
+}
+
+/**
+ * Função para verificar se já estamos em um fluxo de serviço específico
+ */
+function verificarFluxoAtivo(historico) {
+    // Verifica as últimas mensagens para ver se já escolhemos um serviço
+    const ultimasMensagens = historico.slice(-4); // Últimas 4 mensagens
+    
+    for (let i = ultimasMensagens.length - 1; i >= 0; i--) {
+        const msg = ultimasMensagens[i];
+        
+        if (msg.role === 'assistant') {
+            if (msg.content.includes('tarot') && 
+                (msg.content.includes('leitura') || msg.content.includes('cartas'))) {
+                return 'tarot';
+            }
+            if (msg.content.includes('numerologia') && msg.content.includes('nome completo')) {
+                return 'numerologia';
+            }
+            if (msg.content.includes('mapa astral') && msg.content.includes('data de nascimento')) {
+                return 'mapa_astral';
+            }
+        }
+        
+        if (msg.role === 'user') {
+            const servico = detectarServicoSolicitado(msg.content);
+            if (servico !== 'geral') {
+                return servico;
+            }
+        }
+    }
+    
+    return null;
 }
 
 /**
@@ -200,21 +249,35 @@ export async function getOpenAIResponse(messages) {
         console.log(`📨 Mensagem: "${lastMessage.substring(0, 100)}..."`);
         console.log(`📊 Histórico completo: ${historicoCompleto.length} mensagens`);
 
-        // Detecta se é um serviço específico
-        const servico = detectarServicoSolicitado(lastMessage);
-        console.log(`🎯 Serviço detectado: ${servico}`);
+        // Detecta se é um serviço específico na última mensagem
+        const servicoSolicitado = detectarServicoSolicitado(lastMessage);
+        
+        // Verifica se já estamos em um fluxo ativo
+        const fluxoAtivo = verificarFluxoAtivo(historicoCompleto);
+        
+        console.log(`🎯 Serviço solicitado: ${servicoSolicitado}, Fluxo ativo: ${fluxoAtivo}`);
+
+        // DECISÃO: Qual serviço considerar?
+        let servicoParaUsar = servicoSolicitado;
+        if (servicoSolicitado === 'geral' && fluxoAtivo) {
+            servicoParaUsar = fluxoAtivo; // Mantém o fluxo anterior
+        } else if (servicoSolicitado !== 'geral') {
+            servicoParaUsar = servicoSolicitado; // Novo serviço solicitado
+        }
+
+        console.log(`🔧 Serviço para usar: ${servicoParaUsar}`);
 
         // Verifica se temos dados completos para o serviço
         let dadosCompletos = false;
         let promptEspecifico = null;
 
-        if (servico === 'numerologia') {
+        if (servicoParaUsar === 'numerologia') {
             dadosCompletos = verificarDadosNumerologia(lastMessage);
             if (dadosCompletos) {
                 promptEspecifico = criarPromptComDados('numerologia', lastMessage, historicoCompleto);
                 console.log('✅ Dados completos para numerologia - criando prompt específico');
             }
-        } else if (servico === 'mapa_astral') {
+        } else if (servicoParaUsar === 'mapa_astral') {
             dadosCompletos = verificarDadosMapaAstral(lastMessage);
             if (dadosCompletos) {
                 promptEspecifico = criarPromptComDados('mapa_astral', lastMessage, historicoCompleto);
@@ -223,29 +286,28 @@ export async function getOpenAIResponse(messages) {
         }
 
         // Se detectamos um serviço específico mas não temos dados ainda
-        if (servico !== 'geral' && !dadosCompletos) {
-            const jaPediu = jaPediuDados(servico, historicoCompleto);
+        if (servicoParaUsar !== 'geral' && !dadosCompletos) {
+            const jaPediu = jaPediuDados(servicoParaUsar, historicoCompleto);
             
             if (!jaPediu) {
-                if (servico === 'mapa_astral') {
+                if (servicoParaUsar === 'mapa_astral') {
                     return "Claro! Para fazer seu mapa astral, preciso que você me informe:\n\n• Data de nascimento (dia/mês/ano)\n• Horário de nascimento\n• Cidade e estado onde nasceu\n\nPode me passar essas informações?";
                 }
                 
-                if (servico === 'numerologia') {
+                if (servicoParaUsar === 'numerologia') {
                     return "Perfeito! Para fazer sua análise numerológica, preciso de:\n\n• Seu nome completo\n• Sua data de nascimento (dia/mês/ano)\n\nPode me informar esses dados?";
                 }
             }
             // Se já pediu os dados antes, deixa o fluxo normal continuar
         }
 
-        // ✅✅✅ CORREÇÃO CRÍTICA AQUI ⬇️
         // Prepara mensagens para a OpenAI
         let mensagensCompletas = [
             {
                 role: "system",
                 content: SARAH_PERSONALITY
             },
-            ...historicoCompleto.map(msg => ({  // ✅ CORRETO: historicoCompleto (não historicoCompletas)
+            ...historicoCompleto.map(msg => ({
                 role: msg.role,
                 content: msg.content
             }))
