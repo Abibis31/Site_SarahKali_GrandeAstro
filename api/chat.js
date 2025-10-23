@@ -1,11 +1,7 @@
-import OpenAI from 'openai';
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-// Configuração do cliente OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// Personalidade da Sarah Kali - Versão Melhorada com Contexto
+// Personalidade da Sarah Kali - Versão Natural e Funcional
 const SARAH_PERSONALITY = `Você é Sarah Kali, uma cartomante espiritual com mais de 15 anos de experiência em tarot, astrologia e numerologia.
 
 SUA PERSONALIDADE:
@@ -111,125 +107,12 @@ function verificarFluxoAtivo(historico) {
     return null;
 }
 
-/**
- * Função para verificar se a mensagem contém dados para numerologia
- */
-function verificarDadosNumerologia(mensagem) {
-    console.log('🔍 Verificando dados para numerologia...');
-    
-    // Verifica se tem data de nascimento (formato DD/MM/AAAA)
-    const temData = /\d{1,2}\/\d{1,2}\/\d{4}/.test(mensagem);
-    
-    // Verifica se tem nome completo (pelo menos 2 palavras com mais de 3 letras)
-    const palavras = mensagem.split(/\s+/);
-    const palavrasComTamanho = palavras.filter(palavra => palavra.length >= 3);
-    const temNome = palavrasComTamanho.length >= 2;
-    
-    console.log(`📊 Data detectada: ${temData}, Nome detectado: ${temNome}`);
-    console.log(`📝 Palavras com tamanho: ${palavrasComTamanho.length}`);
-    
-    return temData && temNome;
-}
-
-/**
- * Função para verificar se a mensagem contém dados para mapa astral
- */
-function verificarDadosMapaAstral(mensagem) {
-    console.log('🔍 Verificando dados para mapa astral...');
-    
-    // Verifica se tem data de nascimento
-    const temData = /\d{1,2}\/\d{1,2}\/\d{4}/.test(mensagem);
-    
-    // Verifica se tem horário (formato HH:MM ou HHhMM)
-    const temHorario = /\d{1,2}[:h]\d{2}/.test(mensagem);
-    
-    // Verifica se tem local (pelo menos uma palavra que parece cidade/estado)
-    const temLocal = /(são paulo|rio de janeiro|minas|bahia|brasília|porto alegre|curitiba|fortaleza|recife|belo horizonte|salvador|manaus)/i.test(mensagem) || 
-                    /(sp|rj|mg|rs|pr|sc|ba|pe|ce|df|go|mt|ms|am|pa)/i.test(mensagem);
-    
-    console.log(`📊 Data: ${temData}, Horário: ${temHorario}, Local: ${temLocal}`);
-    
-    return temData && temHorario && temLocal;
-}
-
-/**
- * Verifica se já pedimos dados para um serviço específico
- */
-function jaPediuDados(servico, historico) {
-    if (servico === 'mapa_astral') {
-        return historico.some(msg => 
-            msg.role === 'assistant' && 
-            (msg.content.includes('data de nascimento') || msg.content.includes('mapa astral'))
-        );
-    }
-    
-    if (servico === 'numerologia') {
-        return historico.some(msg => 
-            msg.role === 'assistant' && 
-            (msg.content.includes('nome completo') || msg.content.includes('numerologia'))
-        );
-    }
-    
-    return false;
-}
-
-/**
- * Extrai dados da mensagem para criar um prompt específico
- */
-function criarPromptComDados(servico, mensagem, historico) {
-    if (servico === 'numerologia') {
-        // Extrai a data
-        const dataMatch = mensagem.match(/\d{1,2}\/\d{1,2}\/\d{4}/);
-        const data = dataMatch ? dataMatch[0] : 'data não encontrada';
-        
-        // Extrai o nome (assume que as primeiras palavras são o nome)
-        const palavras = mensagem.split(/\s+/).filter(palavra => palavra.length >= 3);
-        const nome = palavras.slice(0, 3).join(' '); // Pega até 3 palavras como nome
-        
-        return `O usuário forneceu os dados para numerologia:
-Nome: ${nome}
-Data de nascimento: ${data}
-
-FAÇA uma análise numerológica COMPLETA e detalhada baseada nestes dados. Analise:
-- Caminho de vida
-- Número de expressão
-- Número de alma
-- Anos pessoais
-- Desafios e oportunidades
-
-Seja específico e detalhado na análise.`;
-    }
-    
-    if (servico === 'mapa_astral') {
-        const dataMatch = mensagem.match(/\d{1,2}\/\d{1,2}\/\d{4}/);
-        const data = dataMatch ? dataMatch[0] : 'data não encontrada';
-        
-        const horarioMatch = mensagem.match(/\d{1,2}[:h]\d{2}/);
-        const horario = horarioMatch ? horarioMatch[0] : 'horário não encontrado';
-        
-        return `O usuário forneceu os dados para mapa astral:
-Data de nascimento: ${data}
-Horário de nascimento: ${horario}
-
-FAÇA uma análise astral COMPLETA e detalhada baseada nestes dados. Analise:
-- Signo solar, lunar e ascendente
-- Posições planetárias principais
-- Casas astrológicas relevantes
-- Aspectos importantes
-- Tendências e características marcantes
-
-Seja específico e detalhado na análise.`;
-    }
-    
-    return null;
-}
-
 export async function getOpenAIResponse(messages) {
-    console.log('🔮 Sarah Kali - Processando mensagem...');
+    console.log('🔮 Sarah Kali - Processando mensagem com Groq...');
     
     // Verificação da API Key
-    if (!process.env.OPENAI_API_KEY) {
-        console.error('❌ OPENAI_API_KEY não encontrada');
+    if (!GROQ_API_KEY) {
+        console.error('❌ GROQ_API_KEY não encontrada');
         return "Estou com problemas de conexão no momento. Por favor, tente novamente mais tarde.";
     }
 
@@ -267,42 +150,8 @@ export async function getOpenAIResponse(messages) {
 
         console.log(`🔧 Serviço para usar: ${servicoParaUsar}`);
 
-        // Verifica se temos dados completos para o serviço
-        let dadosCompletos = false;
-        let promptEspecifico = null;
-
-        if (servicoParaUsar === 'numerologia') {
-            dadosCompletos = verificarDadosNumerologia(lastMessage);
-            if (dadosCompletos) {
-                promptEspecifico = criarPromptComDados('numerologia', lastMessage, historicoCompleto);
-                console.log('✅ Dados completos para numerologia - criando prompt específico');
-            }
-        } else if (servicoParaUsar === 'mapa_astral') {
-            dadosCompletos = verificarDadosMapaAstral(lastMessage);
-            if (dadosCompletos) {
-                promptEspecifico = criarPromptComDados('mapa_astral', lastMessage, historicoCompleto);
-                console.log('✅ Dados completos para mapa astral - criando prompt específico');
-            }
-        }
-
-        // Se detectamos um serviço específico mas não temos dados ainda
-        if (servicoParaUsar !== 'geral' && !dadosCompletos) {
-            const jaPediu = jaPediuDados(servicoParaUsar, historicoCompleto);
-            
-            if (!jaPediu) {
-                if (servicoParaUsar === 'mapa_astral') {
-                    return "Claro! Para fazer seu mapa astral, preciso que você me informe:\n\n• Data de nascimento (dia/mês/ano)\n• Horário de nascimento\n• Cidade e estado onde nasceu\n\nPode me passar essas informações?";
-                }
-                
-                if (servicoParaUsar === 'numerologia') {
-                    return "Perfeito! Para fazer sua análise numerológica, preciso de:\n\n• Seu nome completo\n• Sua data de nascimento (dia/mês/ano)\n\nPode me informar esses dados?";
-                }
-            }
-            // Se já pediu os dados antes, deixa o fluxo normal continuar
-        }
-
-        // Prepara mensagens para a OpenAI
-        let mensagensCompletas = [
+        // Prepara mensagens para a Groq API
+        const mensagensCompletas = [
             {
                 role: "system",
                 content: SARAH_PERSONALITY
@@ -313,32 +162,44 @@ export async function getOpenAIResponse(messages) {
             }))
         ];
 
-        // Se temos dados completos, adiciona um prompt específico no final
-        if (promptEspecifico) {
-            mensagensCompletas.push({
-                role: "system",
-                content: promptEspecifico
-            });
-        }
+        console.log(`📤 Enviando ${mensagensCompletas.length} mensagens para Groq API`);
 
-        console.log(`📤 Enviando ${mensagensCompletas.length} mensagens para OpenAI`);
-
-        // Chamada para API OpenAI com HISTÓRICO COMPLETO
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4",
-            messages: mensagensCompletas,
-            temperature: 0.7,
-            max_tokens: 1500,
-            top_p: 0.9,
+        // Chamada para Groq API
+        const response = await fetch(GROQ_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${GROQ_API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model: "llama-3.1-8b-instant", // Modelo rápido e econômico
+                messages: mensagensCompletas,
+                temperature: 0.7,
+                max_tokens: 1024,
+                top_p: 0.9,
+                stream: false,
+            })
         });
 
-        console.log(`🔢 Tokens usados: ${completion.usage?.total_tokens || 'N/A'}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ Erro Groq API: ${response.status}`, errorText);
+            
+            if (response.status === 429) {
+                return "Estou recebendo muitas consultas agora. Por favor, tente novamente em alguns instantes. 🌟";
+            }
+            
+            throw new Error(`Erro na API: ${response.status}`);
+        }
 
-        if (!completion.choices?.[0]?.message?.content) {
+        const data = await response.json();
+        
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            console.error('❌ Resposta inválida da API:', data);
             throw new Error('Resposta da API incompleta');
         }
 
-        let resposta = completion.choices[0].message.content.trim();
+        let resposta = data.choices[0].message.content.trim();
 
         // Limpeza e otimização da resposta
         resposta = otimizarResposta(resposta);

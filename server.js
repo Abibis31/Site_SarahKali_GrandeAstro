@@ -3,7 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// ✅ IMPORTE ATUALIZADO PARA OPENAI
+// ✅ IMPORTE DA FUNÇÃO DA IA (agora usando Groq)
 import { getOpenAIResponse } from './api/chat.js';
 
 // Configuração de diretórios para ES6 modules
@@ -31,7 +31,7 @@ app.get('/health', (req, res) => {
         message: 'Sarah Kali está online e conectada com o universo! ✨',
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV || 'development',
-        openai_configured: !!process.env.OPENAI_API_KEY
+        groq_configured: !!process.env.GROQ_API_KEY
     });
 });
 
@@ -46,7 +46,7 @@ app.get('/', (req, res) => {
 });
 
 // ======================
-// 💬  ROTA DO CHAT COM OPENAI GPT-4
+// 💬  ROTA DO CHAT COM GROQ
 // ======================
 app.post('/api/chat', async (req, res) => {
     const startTime = Date.now();
@@ -80,7 +80,7 @@ app.post('/api/chat', async (req, res) => {
 
         console.log(`📨 Processando consulta: "${userMessage.substring(0, 50)}..."`);
 
-        // ✅ PROCESSAMENTO COM OPENAI GPT-4 (AGORA COM CONTEXTO COMPLETO)
+        // ✅ PROCESSAMENTO COM GROQ
         const response = await getOpenAIResponse(messages);
         
         const processingTime = Date.now() - startTime;
@@ -90,7 +90,7 @@ app.post('/api/chat', async (req, res) => {
             success: true,
             message: response,
             processingTime: `${processingTime}ms`,
-            model: 'gpt-4'
+            model: 'llama-3.1-8b-instant'
         });
 
     } catch (error) {
@@ -111,13 +111,13 @@ app.post('/api/chat', async (req, res) => {
 // ======================
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('✨' + '='.repeat(60));
-    console.log(`🔮  Sarah Kali Chat Server - COM OPENAI GPT-4 ATIVO`);
+    console.log(`🔮  Sarah Kali Chat Server - COM GROQ ATIVO`);
     console.log(`📍  Rodando na porta: ${PORT}`);
     console.log(`🌐  Ambiente: ${process.env.NODE_ENV || 'production'}`);
     console.log(`🕐  Iniciado em: ${new Date().toISOString()}`);
     console.log('✨' + '='.repeat(60));
     console.log(`✅  Health Check: http://localhost:${PORT}/health`);
-    console.log(`🚀  IA OpenAI GPT-4: ${process.env.OPENAI_API_KEY ? 'CONFIGURADA ✅' : 'NÃO CONFIGURADA ❌'}`);
+    console.log(`🚀  IA Groq: ${process.env.GROQ_API_KEY ? 'CONFIGURADA ✅' : 'NÃO CONFIGURADA ❌'}`);
     console.log(`💫  Pronta para consultas espirituais!`);
     console.log(`🔗  URL: ${process.env.CLIENT_URL || `http://localhost:${PORT}`}`);
 });
