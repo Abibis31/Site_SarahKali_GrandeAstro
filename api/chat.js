@@ -49,7 +49,7 @@ function detectarServicoSolicitado(mensagem) {
     
     if (mensagemLower.includes('mapa astral') || mensagemLower.includes('astral') || 
         mensagemLower.includes('signos') || mensagemLower.includes('zodíaco') ||
-        mensagemLower.includes('planetas') || mensagemUpper.includes('casas astrológicas')) {
+        mensagemLower.includes('planetas') || mensagemLower.includes('casas astrológicas')) {
         return 'mapa_astral';
     }
     
@@ -244,7 +244,7 @@ export async function getOpenAIResponse(messages) {
                 role: "system",
                 content: SARAH_PERSONALITY
             },
-            ...historicoCompleto.map(msg => ({
+            ...historicoCompletas.map(msg => ({
                 role: msg.role,
                 content: msg.content
             }))
