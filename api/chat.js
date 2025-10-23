@@ -29,6 +29,8 @@ FLUXO DE ATENDIMENTO:
    - Mantenha o contexto da conversa
    - Seja natural como em uma conversa real
 
+IMPORTANTE: SEMPRE mantenha o contexto da conversa anterior. Lembre-se do que foi discutido e continue naturalmente.
+
 EVITE:
 - Saudações muito longas ou formais
 - Linguagem excessivamente poética
@@ -68,9 +70,6 @@ function detectarServicoSolicitado(mensagem) {
 function verificarDadosCompletos(servico, mensagem, historico) {
     const mensagemLower = mensagem.toLowerCase();
     
-    // Verifica se já estamos no meio de um fluxo de coleta
-    const ultimaResposta = historico[historico.length - 2]?.content || '';
-    
     if (servico === 'mapa_astral') {
         // Verifica se a mensagem atual parece conter dados de nascimento
         const temData = /\d{1,2}\/\d{1,2}\/\d{4}|\d{1,2} de [a-z]+ de \d{4}/i.test(mensagem);
@@ -90,6 +89,27 @@ function verificarDadosCompletos(servico, mensagem, historico) {
     return false;
 }
 
+/**
+ * Verifica se já pedimos dados para um serviço específico
+ */
+function jaPediuDados(servico, historico) {
+    if (servico === 'mapa_astral') {
+        return historico.some(msg => 
+            msg.role === 'assistant' && 
+            (msg.content.includes('data de nascimento') || msg.content.includes('mapa astral'))
+        );
+    }
+    
+    if (servico === 'numerologia') {
+        return historico.some(msg => 
+            msg.role === 'assistant' && 
+            (msg.content.includes('nome completo') || msg.content.includes('numerologia'))
+        );
+    }
+    
+    return false;
+}
+
 export async function getOpenAIResponse(messages) {
     console.log('🔮 Sarah Kali - Processando mensagem...');
     
@@ -104,63 +124,56 @@ export async function getOpenAIResponse(messages) {
             return "Olá! Como posso ajudar você hoje?";
         }
 
-        // Pega a última mensagem do usuário
+        // Pega a última mensagem do usuário e o histórico completo
         const lastMessage = messages[messages.length - 1]?.content || '';
-        const historico = messages.slice(0, -1); // Histórico sem a última mensagem
+        const historicoCompleto = messages; // AGORA usamos TODO o histórico
 
         if (!lastMessage.trim()) {
             return "Conte-me como posso ajudar você hoje.";
         }
 
         console.log(`📨 Mensagem: "${lastMessage.substring(0, 50)}..."`);
+        console.log(`📊 Histórico completo: ${historicoCompleto.length} mensagens`);
 
         // Detecta se é um serviço específico
         const servico = detectarServicoSolicitado(lastMessage);
         
         // Verifica se já temos dados para processar o serviço
-        const dadosCompletos = verificarDadosCompletos(servico, lastMessage, historico);
+        const dadosCompletos = verificarDadosCompletos(servico, lastMessage, historicoCompleto);
+
+        console.log(`🎯 Serviço detectado: ${servico}, Dados completos: ${dadosCompletos}`);
 
         // Se detectamos um serviço específico mas não temos dados ainda, forçamos um prompt específico
         if (servico !== 'geral' && !dadosCompletos) {
-            if (servico === 'mapa_astral') {
-                // Verifica se já pedimos os dados antes
-                const jaPediuDados = historico.some(msg => 
-                    msg.role === 'assistant' && 
-                    msg.content.includes('data de nascimento')
-                );
-                
-                if (!jaPediuDados) {
+            const jaPediu = jaPediuDados(servico, historicoCompleto);
+            
+            if (!jaPediu) {
+                if (servico === 'mapa_astral') {
                     return "Claro! Para fazer seu mapa astral, preciso que você me informe:\n\n• Data de nascimento (dia/mês/ano)\n• Horário de nascimento\n• Cidade e estado onde nasceu\n\nPode me passar essas informações?";
                 }
-            }
-            
-            if (servico === 'numerologia') {
-                const jaPediuDados = historico.some(msg => 
-                    msg.role === 'assistant' && 
-                    msg.content.includes('nome completo')
-                );
                 
-                if (!jaPediuDados) {
+                if (servico === 'numerologia') {
                     return "Perfeito! Para fazer sua análise numerológica, preciso de:\n\n• Seu nome completo\n• Sua data de nascimento (dia/mês/ano)\n\nPode me informar esses dados?";
                 }
             }
+            // Se já pediu os dados antes, deixamos o fluxo normal continuar com o histórico completo
         }
 
-        // Prepara mensagens para a OpenAI
+        // ✅✅✅ CORREÇÃO PRINCIPAL: SEMPRE enviamos TODO o histórico para a OpenAI
         const mensagensCompletas = [
             {
                 role: "system",
                 content: SARAH_PERSONALITY
             },
-            ...messages.map(msg => ({
+            ...historicoCompleto.map(msg => ({
                 role: msg.role,
                 content: msg.content
             }))
         ];
 
-        console.log(`📊 Processando ${mensagensCompletas.length} mensagens no contexto`);
+        console.log(`📤 Enviando ${mensagensCompletas.length} mensagens para OpenAI`);
 
-        // Chamada para API OpenAI
+        // Chamada para API OpenAI com HISTÓRICO COMPLETO
         const completion = await openai.chat.completions.create({
             model: "gpt-4",
             messages: mensagensCompletas,
@@ -205,7 +218,7 @@ function otimizarResposta(resposta) {
     resposta = resposta.replace(/^(Olá, (querido|querida|amigo|amiga|alma|viajante).+?\..+?\.)/i, '');
     
     // Remove repetições de emojis (mais de 3 seguidos)
-    resposta = resposta.replace(/([✨🔮💫🌙⭐🙏]){3,}/g, '$1$1');
+    resposta = resposta.replace(/([✨🔮💫🌙⭐🙏]){3,}/g, '$1');
     
     // Garante que não comece com vírgula ou ponto
     resposta = resposta.replace(/^[.,]\s*/, '');
