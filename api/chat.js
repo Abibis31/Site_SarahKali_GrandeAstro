@@ -1,6 +1,9 @@
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
+// ✅ IMPORTE DO SISTEMA DE NUMEROLOGIA
+import { gerarRelatorioNumerologico } from './numerology.js';
+
 // Personalidade da Sarah Kali - Versão Natural e Funcional
 const SARAH_PERSONALITY = `Você é Sarah Kali, uma cartomante espiritual com mais de 15 anos de experiência em tarot, astrologia e numerologia.
 
@@ -17,10 +20,10 @@ FLUXO DE ATENDIMENTO CRÍTICO - CONTEXTO É FUNDAMENTAL:
    - NUNCA repita a lista de serviços depois que o usuário já escolheu
    - Avance naturalmente no fluxo do serviço escolhido
 
-2. PARA TAROT ESPECIFICAMENTE:
-   - Se o usuário pede "leitura geral", faça uma leitura geral de tarot
-   - Não peça para escolher entre serviços novamente
-   - Simule uma leitura real com carta(s) específica(s)
+2. PARA NUMEROLOGIA ESPECIFICAMENTE:
+   - Se o usuário fornecer nome e data de nascimento, faça os cálculos numerológicos reais
+   - Use o sistema de numerologia para gerar relatórios precisos
+   - Não simule cálculos - use as funções reais de numerologia
 
 3. IMPORTANTE: SEMPRE mantenha o contexto da conversa anterior. 
    - Se o usuário já escolheu tarot, continue com tarot
@@ -34,11 +37,11 @@ NUNCA:
 - Volte ao início depois que o fluxo já começou
 
 EXEMPLOS DE FLUXO CORRETO:
-Usuário: "gostaria de uma leitura de tarot"
-Sarah: "Perfeito! Vamos fazer uma leitura de tarot. Você tem uma pergunta específica ou prefere uma leitura geral sobre sua vida?"
+Usuário: "quero numerologia"
+Sarah: "Perfeito! Para sua análise numerológica, preciso do seu nome completo e data de nascimento (formato DD/MM/AAAA)."
 
-Usuário: "leitura geral"  
-Sarah: "[FAZ LEITURA DE TAROT COMPLETA]"
+Usuário: "João Silva, 15/03/1990"
+Sarah: "[GERA RELATÓRIO NUMEROLÓGICO REAL COM CÁLCULOS]"
 
 SEJA:
 - Natural e conversacional
@@ -107,6 +110,54 @@ function verificarFluxoAtivo(historico) {
     return null;
 }
 
+/**
+ * ✅ NOVA FUNÇÃO: Extrair nome e data da mensagem do usuário
+ */
+function extrairNomeEData(mensagem) {
+    // Tenta encontrar padrões de data
+    const dataRegex = /(\d{1,2})\/(\d{1,2})\/(\d{4})/;
+    const matchData = mensagem.match(dataRegex);
+    
+    if (!matchData) {
+        return null;
+    }
+    
+    const data = matchData[0];
+    
+    // Remove a data da mensagem para extrair o nome
+    let nome = mensagem.replace(dataRegex, '').replace(/[,\-]/g, '').trim();
+    
+    // Limpa possíveis sobras
+    nome = nome.replace(/\s+/g, ' ').replace(/^meu nome é /i, '').replace(/^nome /i, '');
+    
+    if (!nome || nome.length < 2) {
+        return null;
+    }
+    
+    return { nome, data };
+}
+
+/**
+ * ✅ NOVA FUNÇÃO: Verificar se temos dados para numerologia no histórico
+ */
+function verificarDadosNumerologiaNoHistorico(historico) {
+    // Verifica as últimas 6 mensagens
+    const mensagensRelevantes = historico.slice(-6);
+    
+    for (let i = mensagensRelevantes.length - 1; i >= 0; i--) {
+        const msg = mensagensRelevantes[i];
+        
+        if (msg.role === 'user') {
+            const dados = extrairNomeEData(msg.content);
+            if (dados) {
+                return dados;
+            }
+        }
+    }
+    
+    return null;
+}
+
 export async function getOpenAIResponse(messages) {
     console.log('🔮 Sarah Kali - Processando mensagem com Groq...');
     
@@ -150,7 +201,36 @@ export async function getOpenAIResponse(messages) {
 
         console.log(`🔧 Serviço para usar: ${servicoParaUsar}`);
 
-        // Prepara mensagens para a Groq API
+        // ======================
+        // 🔢 FLUXO NUMEROLOGIA - CÁLCULOS REAIS
+        // ======================
+        if (servicoParaUsar === 'numerologia') {
+            console.log('🎯 Iniciando fluxo de numerologia...');
+            
+            // Verifica se já temos nome e data no histórico
+            const dadosUsuario = verificarDadosNumerologiaNoHistorico(historicoCompleto);
+            
+            if (dadosUsuario) {
+                console.log(`📊 Dados encontrados: ${dadosUsuario.nome}, ${dadosUsuario.data}`);
+                
+                // ✅ GERA RELATÓRIO NUMEROLÓGICO REAL
+                const relatorio = gerarRelatorioNumerologico(dadosUsuario.nome, dadosUsuario.data);
+                
+                if (relatorio.sucesso) {
+                    console.log('✅ Relatório numerológico gerado com sucesso!');
+                    return relatorio.relatorio;
+                } else {
+                    console.error('❌ Erro no relatório:', relatorio.erro);
+                    return "Encontrei seus dados, mas tive um problema técnico nos cálculos. Pode verificar se a data está no formato DD/MM/AAAA?";
+                }
+            } else {
+                // Ainda não temos dados - pede nome e data
+                console.log('📝 Pedindo dados para numerologia...');
+                return "Perfeito! Para sua análise numerológica completa, preciso do seu **nome completo** e **data de nascimento** (no formato DD/MM/AAAA). Pode me informar? ✨";
+            }
+        }
+
+        // Prepara mensagens para a Groq API (para outros serviços)
         const mensagensCompletas = [
             {
                 role: "system",
