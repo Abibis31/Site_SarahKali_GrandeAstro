@@ -3,6 +3,8 @@ const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 // ✅ IMPORTE DO SISTEMA DE NUMEROLOGIA
 import { gerarRelatorioNumerologico } from './numerology.js';
+// ✅ IMPORTE DO SISTEMA DE MAPA ASTRAL
+import { gerarRelatorioMapaAstral } from './astrology.js';
 
 // Personalidade da Sarah Kali - Versão Natural e Funcional
 const SARAH_PERSONALITY = `Você é Sarah Kali, uma cartomante espiritual com mais de 15 anos de experiência em tarot, astrologia e numerologia.
@@ -25,7 +27,12 @@ FLUXO DE ATENDIMENTO CRÍTICO - CONTEXTO É FUNDAMENTAL:
    - Use o sistema de numerologia para gerar relatórios precisos
    - Não simule cálculos - use as funções reais de numerologia
 
-3. IMPORTANTE: SEMPRE mantenha o contexto da conversa anterior. 
+3. PARA MAPA ASTRAL ESPECIFICAMENTE:
+   - Se o usuário fornecer dados completos, faça os cálculos astrológicos reais
+   - Use o sistema de astrologia para gerar relatórios precisos
+   - Calcule signo solar, lunar, ascendente e casas astrológicas
+
+4. IMPORTANTE: SEMPRE mantenha o contexto da conversa anterior. 
    - Se o usuário já escolheu tarot, continue com tarot
    - Se já escolheu numerologia, continue com numerologia  
    - Se já escolheu mapa astral, continue com mapa astral
@@ -42,6 +49,12 @@ Sarah: "Perfeito! Para sua análise numerológica, preciso do seu nome completo 
 
 Usuário: "João Silva, 15/03/1990"
 Sarah: "[GERA RELATÓRIO NUMEROLÓGICO REAL COM CÁLCULOS]"
+
+Usuário: "quero mapa astral"
+Sarah: "Perfeito! Para seu mapa astral completo, preciso do seu nome completo, data de nascimento, hora (se souber) e cidade."
+
+Usuário: "Maria Santos, 15/08/1990, 14:30, São Paulo"
+Sarah: "[GERA RELATÓRIO ASTRAL REAL COM CÁLCULOS]"
 
 SEJA:
 - Natural e conversacional
@@ -111,7 +124,7 @@ function verificarFluxoAtivo(historico) {
 }
 
 /**
- * ✅ NOVA FUNÇÃO: Extrair nome e data da mensagem do usuário
+ * ✅ FUNÇÃO: Extrair nome e data da mensagem do usuário
  */
 function extrairNomeEData(mensagem) {
     // Tenta encontrar padrões de data
@@ -138,7 +151,7 @@ function extrairNomeEData(mensagem) {
 }
 
 /**
- * ✅ NOVA FUNÇÃO: Verificar se temos dados para numerologia no histórico
+ * ✅ FUNÇÃO: Verificar se temos dados para numerologia no histórico
  */
 function verificarDadosNumerologiaNoHistorico(historico) {
     // Verifica as últimas 6 mensagens
@@ -153,6 +166,75 @@ function verificarDadosNumerologiaNoHistorico(historico) {
                 return dados;
             }
         }
+    }
+    
+    return null;
+}
+
+/**
+ * ✅ NOVA FUNÇÃO: Verificar dados para mapa astral no histórico
+ */
+function verificarDadosMapaAstralNoHistorico(historico) {
+    const mensagensRelevantes = historico.slice(-8);
+    
+    let nome = '';
+    let data = '';
+    let hora = null;
+    let local = null;
+    
+    // Procura dados nas últimas mensagens
+    for (let i = mensagensRelevantes.length - 1; i >= 0; i--) {
+        const msg = mensagensRelevantes[i];
+        
+        if (msg.role === 'user') {
+            const texto = msg.content.toLowerCase();
+            
+            // Tenta extrair data (formato DD/MM/AAAA)
+            const dataMatch = texto.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+            if (dataMatch && !data) {
+                data = dataMatch[0];
+            }
+            
+            // Tenta extrair hora (formato HH:MM)
+            const horaMatch = texto.match(/(\d{1,2}):(\d{2})/);
+            if (horaMatch && !hora) {
+                hora = horaMatch[0];
+            }
+            
+            // Tenta identificar nome (assume que é o primeiro texto antes da data)
+            if (dataMatch && !nome) {
+                const partes = msg.content.split(dataMatch[0])[0].trim().split(/[\.,]/);
+                nome = partes[0].trim();
+            }
+            
+            // Tenta identificar local (palavras-chave comuns)
+            const locaisComuns = ['são paulo', 'rio de janeiro', 'brasília', 'salvador', 'fortaleza', 'belo horizonte', 'manaus', 'curitiba', 'recife', 'porto alegre', 'porto velho', 'belém', 'goiânia', 'campo grande', 'cuiabá', 'florianópolis', 'joão pessoa', 'maceió', 'natal', 'teresina', 'aracaju', 'palmas', 'boa vista', 'macapá', 'rio branco', 'vitória'];
+            for (const localComum of locaisComuns) {
+                if (texto.includes(localComum) && !local) {
+                    local = localComum;
+                    break;
+                }
+            }
+            
+            // Se não encontrou por lista, tenta extrair texto após vírgulas
+            if (!local) {
+                const partes = msg.content.split(',');
+                if (partes.length >= 4) {
+                    local = partes[3].trim();
+                } else if (partes.length >= 3 && !horaMatch) {
+                    // Se não tem hora, o terceiro item pode ser o local
+                    const possivelLocal = partes[2].trim();
+                    if (possivelLocal.length > 3 && !possivelLocal.match(/\d/)) {
+                        local = possivelLocal;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Retorna somente se temos nome e data (mínimo necessário)
+    if (nome && data) {
+        return { nome, data, hora, local };
     }
     
     return null;
@@ -227,6 +309,35 @@ export async function getOpenAIResponse(messages) {
                 // Ainda não temos dados - pede nome e data
                 console.log('📝 Pedindo dados para numerologia...');
                 return "Perfeito! Para sua análise numerológica completa, preciso do seu **nome completo** e **data de nascimento** (no formato DD/MM/AAAA). Pode me informar? ✨";
+            }
+        }
+
+        // ======================
+        // 🌟 FLUXO MAPA ASTRAL - CÁLCULOS REAIS
+        // ======================
+        if (servicoParaUsar === 'mapa_astral') {
+            console.log('🎯 Iniciando fluxo de mapa astral...');
+            
+            // Verifica se já temos dados no histórico
+            const dadosUsuario = verificarDadosMapaAstralNoHistorico(historicoCompleto);
+            
+            if (dadosUsuario) {
+                console.log(`📊 Dados encontrados: ${dadosUsuario.nome}, ${dadosUsuario.data}, ${dadosUsuario.hora}, ${dadosUsuario.local}`);
+                
+                // ✅ GERA RELATÓRIO ASTRAL REAL
+                const relatorio = gerarRelatorioMapaAstral(dadosUsuario.nome, dadosUsuario.data, dadosUsuario.hora, dadosUsuario.local);
+                
+                if (relatorio.sucesso) {
+                    console.log('✅ Relatório de mapa astral gerado com sucesso!');
+                    return relatorio.relatorio;
+                } else {
+                    console.error('❌ Erro no relatório:', relatorio.erro);
+                    return "Encontrei seus dados, mas tive um problema técnico nos cálculos astrológicos. Pode verificar se a data está no formato DD/MM/AAAA?";
+                }
+            } else {
+                // Ainda não temos dados - pede dados
+                console.log('📝 Pedindo dados para mapa astral...');
+                return "Perfeito! Para seu mapa astral completo, preciso do seu **nome completo**, **data de nascimento** (formato DD/MM/AAAA), **hora de nascimento** (se souber, formato HH:MM) e **cidade de nascimento**. Pode me informar? ✨";
             }
         }
 
