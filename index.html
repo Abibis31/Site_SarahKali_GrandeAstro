@@ -309,7 +309,7 @@
             navMenu.classList.toggle('active');
         });
 
-        // ===== SISTEMA DE CHAT =====
+        // ===== SISTEMA DE CHAT CORRIGIDO =====
         const chatFloat = document.getElementById('chatFloat');
         const chatModal = document.getElementById('chatModal');
         const chatClose = document.getElementById('chatClose');
@@ -320,6 +320,32 @@
 
         let isLoading = false;
         let lastMessageTime = 0;
+
+        // ✅ HISTÓRICO DE MENSAGENS - Armazena toda a conversa
+        let chatHistory = [
+            {
+                role: 'assistant',
+                content: 'Olá! Eu sou Sarah Kali. Como posso ajudá-lo hoje em sua jornada espiritual? Estou aqui para orientar sobre tarot, astrologia e numerologia. ✨'
+            }
+        ];
+
+        // ✅ SESSION ID ÚNICO para cada conversa
+        const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+        // ✅ FUNÇÃO PARA RENDERIZAR TODO O HISTÓRICO
+        function renderChatHistory() {
+            chatMessages.innerHTML = '';
+            chatHistory.forEach(msg => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${msg.role}`;
+                messageDiv.innerHTML = `<div class="message-content">${msg.content}</div>`;
+                chatMessages.appendChild(messageDiv);
+            });
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // ✅ INICIALIZAR CHAT COM HISTÓRICO
+        renderChatHistory();
 
         // Abrir/Fechar Modal
         chatFloat.addEventListener('click', () => {
@@ -350,7 +376,7 @@
             });
         });
 
-        // Enviar Mensagem
+        // ✅ ENVIAR MENSAGEM CORRIGIDO - ENVIA HISTÓRICO COMPLETO
         chatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -361,18 +387,23 @@
             if (!message || isLoading) return;
             
             lastMessageTime = now;
-            addMessage(message, 'user');
+            
+            // ✅ ADICIONA MENSAGEM DO USUÁRIO AO HISTÓRICO
+            chatHistory.push({ role: 'user', content: message });
+            renderChatHistory();
             chatInput.value = '';
             showTypingIndicator();
             
             try {
                 isLoading = true;
                 
+                // ✅ ENVIA HISTÓRICO COMPLETO + SESSION ID
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        messages: [{ role: 'user', content: message }]
+                        messages: chatHistory,  // ✅ AGORA ENVIA TODAS AS MENSAGENS
+                        sessionId: sessionId   // ✅ ID DA CONVERSA
                     })
                 });
 
@@ -380,26 +411,23 @@
                 const data = await response.json();
                 
                 removeTypingIndicator();
-                addMessage(data.message, 'assistant');
+                
+                // ✅ ADICIONA RESPOSTA DA IA AO HISTÓRICO
+                chatHistory.push({ role: 'assistant', content: data.message });
+                renderChatHistory();
                 
             } catch (error) {
                 console.error('Erro no chat:', error);
                 removeTypingIndicator();
-                addMessage('Desculpe, estou realinhando minhas energias cósmicas. Tente novamente ou use o WhatsApp. ✨', 'assistant');
+                const errorMessage = 'Desculpe, estou realinhando minhas energias cósmicas. Tente novamente ou use o WhatsApp. ✨';
+                chatHistory.push({ role: 'assistant', content: errorMessage });
+                renderChatHistory();
             } finally {
                 isLoading = false;
             }
         });
 
         // Funções Auxiliares
-        function addMessage(content, role) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${role}`;
-            messageDiv.innerHTML = `<div class="message-content">${content}</div>`;
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
         function showTypingIndicator() {
             const typingDiv = document.createElement('div');
             typingDiv.className = 'message assistant';

@@ -6,6 +6,9 @@ import { fileURLToPath } from 'url';
 // ✅ IMPORTE DA FUNÇÃO DA IA (agora usando Groq)
 import { getOpenAIResponse } from './api/chat.js';
 
+// ✅ IMPORTE DO DATABASE
+import { ChatDatabase } from './database.js';
+
 // Configuração de diretórios para ES6 modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,6 +16,9 @@ const __dirname = path.dirname(__filename);
 // Inicialização do Express
 const app = express();
 const PORT = process.env.PORT || 10000;
+
+// ✅ INICIALIZAR DATABASE
+const chatDB = new ChatDatabase();
 
 // ======================
 // 🛡️  MIDDLEWARES
@@ -46,7 +52,7 @@ app.get('/', (req, res) => {
 });
 
 // ======================
-// 💬  ROTA DO CHAT COM GROQ
+// 💬  ROTA DO CHAT COM GROQ - CORRIGIDA
 // ======================
 app.post('/api/chat', async (req, res) => {
     const startTime = Date.now();
@@ -54,7 +60,7 @@ app.post('/api/chat', async (req, res) => {
     try {
         console.log('🔮 Nova consulta espiritual recebida...');
         
-        const { messages } = req.body;
+        const { messages, sessionId = 'default' } = req.body;
 
         // Validação da mensagem
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -66,23 +72,20 @@ app.post('/api/chat', async (req, res) => {
         }
 
         console.log(`📊 Histórico recebido: ${messages.length} mensagens`);
+        console.log(`🔑 Session ID: ${sessionId}`);
 
+        // ✅ SALVAR APENAS A ÚLTIMA MENSAGEM DO USUÁRIO NO DATABASE
         const lastMessage = messages[messages.length - 1];
-        const userMessage = lastMessage?.content?.trim() || '';
-
-        if (!userMessage) {
-            console.warn('⚠️ Mensagem vazia recebida');
-            return res.status(400).json({
-                error: 'Mensagem vazia', 
-                message: 'Querida alma, compartilhe sua questão comigo... ✨'
-            });
+        if (lastMessage.role === 'user') {
+            await chatDB.addMessage(sessionId, 'user', lastMessage.content);
         }
 
-        console.log(`📨 Processando consulta: "${userMessage.substring(0, 50)}..."`);
-
-        // ✅ PROCESSAMENTO COM GROQ
+        // ✅ PROCESSAMENTO COM GROQ (envia histórico completo)
         const response = await getOpenAIResponse(messages);
         
+        // ✅ SALVAR RESPOSTA DA IA NO DATABASE
+        await chatDB.addMessage(sessionId, 'assistant', response);
+
         const processingTime = Date.now() - startTime;
         console.log(`✅ Consulta espiritual respondida em ${processingTime}ms`);
 
