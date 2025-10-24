@@ -31,8 +31,11 @@ FLUXO DE ATENDIMENTO CRÍTICO - CONTEXTO É FUNDAMENTAL:
    - Se o usuário fornecer dados completos, faça os cálculos astrológicos reais
    - Use o sistema de astrologia para gerar relatórios precisos
    - Calcule signo solar, lunar, ascendente e casas astrológicas
+   - Se faltarem dados, identifique especificamente o que está faltando e peça apenas isso
 
-4. IMPORTANTE: SEMPRE mantenha o contexto da conversa anterior. 
+4. IMPORTANTE: Após gerar um relatório completo, não gere outro relatório para mensagens subsequentes a menos que o usuário peça explicitamente.
+
+5. SEMPRE mantenha o contexto da conversa anterior. 
    - Se o usuário já escolheu tarot, continue com tarot
    - Se já escolheu numerologia, continue com numerologia  
    - Se já escolheu mapa astral, continue com mapa astral
@@ -42,18 +45,16 @@ NUNCA:
 - Peça confirmações desnecessárias
 - Entre em loops de repetição
 - Volte ao início depois que o fluxo já começou
+- Gere relatórios duplicados para a mesma consulta
 
 EXEMPLOS DE FLUXO CORRETO:
-Usuário: "quero numerologia"
-Sarah: "Perfeito! Para sua análise numerológica, preciso do seu nome completo e data de nascimento (formato DD/MM/AAAA)."
-
-Usuário: "João Silva, 15/03/1990"
-Sarah: "[GERA RELATÓRIO NUMEROLÓGICO REAL COM CÁLCULOS]"
-
 Usuário: "quero mapa astral"
-Sarah: "Perfeito! Para seu mapa astral completo, preciso do seu nome completo, data de nascimento, hora (se souber) e cidade."
+Sarah: "Perfeito! Para seu mapa astral completo, preciso do seu nome completo, data de nascimento (formato DD/MM/AAAA), hora (se souber) e cidade."
 
-Usuário: "Maria Santos, 15/08/1990, 14:30, São Paulo"
+Usuário: "21/12/2005 06:00 São Paulo"
+Sarah: "✨ Perfeito! Tenho sua data de nascimento (21/12/2005), hora (06:00) e cidade (São Paulo). Para personalizar seu mapa astral, está faltando apenas seu nome completo. Pode me informar?"
+
+Usuário: "Meu nome é João Silva"
 Sarah: "[GERA RELATÓRIO ASTRAL REAL COM CÁLCULOS]"
 
 SEJA:
@@ -172,6 +173,37 @@ function verificarDadosNumerologiaNoHistorico(historico) {
 }
 
 /**
+ * ✅ NOVA FUNÇÃO: Verificar se já gerou relatório recentemente
+ */
+function jaGerouRelatorioRecentemente(historico, servico) {
+    const ultimasMensagens = historico.slice(-4);
+    
+    for (let i = ultimasMensagens.length - 1; i >= 0; i--) {
+        const msg = ultimasMensagens[i];
+        
+        if (msg.role === 'assistant') {
+            // Verifica se já gerou relatório deste serviço recentemente
+            if (servico === 'mapa_astral' && msg.content.includes('MAPA ASTRAL DE')) {
+                return true;
+            }
+            if (servico === 'numerologia' && msg.content.includes('ANÁLISE NUMEROLÓGICA')) {
+                return true;
+            }
+        }
+        
+        // Se encontrou uma mensagem do usuário pedindo o serviço novamente, não bloqueia
+        if (msg.role === 'user') {
+            const servicoSolicitado = detectarServicoSolicitado(msg.content);
+            if (servicoSolicitado === servico) {
+                return false;
+            }
+        }
+    }
+    
+    return false;
+}
+
+/**
  * ✅ NOVA FUNÇÃO: Verificar dados para mapa astral no histórico
  */
 function verificarDadosMapaAstralNoHistorico(historico) {
@@ -195,20 +227,47 @@ function verificarDadosMapaAstralNoHistorico(historico) {
                 data = dataMatch[0];
             }
             
-            // Tenta extrair hora (formato HH:MM)
+            // ✅ CORREÇÃO MELHORADA: Extrair hora de formato textual
             const horaMatch = texto.match(/(\d{1,2}):(\d{2})/);
             if (horaMatch && !hora) {
                 hora = horaMatch[0];
+            } else {
+                // Tenta extrair hora por extenso (ex: "06 da manhã")
+                const horaExtensoMatch = texto.match(/(\d{1,2})\s*(?:h|horas?)?\s*(?:da\s*(manhã|tarde|noite))/i);
+                if (horaExtensoMatch && !hora) {
+                    let horaNum = parseInt(horaExtensoMatch[1]);
+                    const periodo = horaExtensoMatch[2].toLowerCase();
+                    
+                    // Converter para formato 24h
+                    if (periodo === 'tarde' && horaNum < 12) {
+                        horaNum += 12;
+                    } else if (periodo === 'noite' && horaNum < 12) {
+                        horaNum += 12;
+                    }
+                    // Formata para HH:MM
+                    hora = horaNum.toString().padStart(2, '0') + ':00';
+                }
             }
             
-            // Tenta identificar nome (assume que é o primeiro texto antes da data)
+            // ✅ CORREÇÃO MELHORADA: Extrair nome de mensagens que contêm dados
             if (dataMatch && !nome) {
-                const partes = msg.content.split(dataMatch[0])[0].trim().split(/[\.,]/);
-                nome = partes[0].trim();
+                let possivelNome = msg.content.split(dataMatch[0])[0].trim();
+                
+                // Remove padrões comuns que não são nomes
+                possivelNome = possivelNome.replace(/^(ok|okay|sim|claro|tudo bem|beleza),?\s*/i, '');
+                possivelNome = possivelNome.replace(/^(quero|gostaria|preciso|desejo|meu|o|a)\s+/i, '');
+                possivelNome = possivelNome.replace(/\s*(mapa astral|astral|signo|zodíaco|horóscopo).*$/i, '');
+                
+                // Se o texto restante parece um nome (tem pelo menos 2 palavras e não é muito curto)
+                const palavras = possivelNome.split(/\s+/);
+                if (palavras.length >= 2 && possivelNome.length >= 6) {
+                    nome = possivelNome;
+                }
             }
             
-            // Tenta identificar local (palavras-chave comuns)
-            const locaisComuns = ['são paulo', 'rio de janeiro', 'brasília', 'salvador', 'fortaleza', 'belo horizonte', 'manaus', 'curitiba', 'recife', 'porto alegre', 'porto velho', 'belém', 'goiânia', 'campo grande', 'cuiabá', 'florianópolis', 'joão pessoa', 'maceió', 'natal', 'teresina', 'aracaju', 'palmas', 'boa vista', 'macapá', 'rio branco', 'vitória'];
+            // Tenta identificar local
+            const locaisComuns = ['são paulo', 'rio de janeiro', 'brasília', 'salvador', 'fortaleza', 'belo horizonte', 
+                                'manaus', 'curitiba', 'recife', 'porto alegre', 'são luiz', 'são luís', 'são paulo capital'];
             for (const localComum of locaisComuns) {
                 if (texto.includes(localComum) && !local) {
                     local = localComum;
@@ -232,12 +291,89 @@ function verificarDadosMapaAstralNoHistorico(historico) {
         }
     }
     
-    // Retorna somente se temos nome e data (mínimo necessário)
-    if (nome && data) {
-        return { nome, data, hora, local };
+    console.log(`🔍 Dados extraídos - Nome: "${nome}", Data: "${data}", Hora: "${hora}", Local: "${local}"`);
+    
+    // Retorna mesmo se não tiver nome, para podermos pedir especificamente
+    return { nome, data, hora, local };
+}
+
+/**
+ * ✅ NOVA FUNÇÃO: Verificar quais dados estão faltando
+ */
+function verificarDadosFaltantesMapaAstral(dados) {
+    const faltantes = [];
+    
+    if (!dados.nome || dados.nome.length < 3) {
+        faltantes.push('nome completo');
+    }
+    if (!dados.data) {
+        faltantes.push('data de nascimento (DD/MM/AAAA)');
+    }
+    if (!dados.hora) {
+        faltantes.push('hora de nascimento (opcional, formato HH:MM)');
+    }
+    if (!dados.local) {
+        faltantes.push('cidade de nascimento');
     }
     
-    return null;
+    return faltantes;
+}
+
+/**
+ * ✅ NOVA FUNÇÃO: Mensagens específicas para dados faltantes
+ */
+function gerarMensagemDadosFaltantes(dadosFaltantes, dadosColetados) {
+    console.log(`📋 Dados coletados:`, dadosColetados);
+    console.log(`❌ Dados faltantes:`, dadosFaltantes);
+    
+    // Contar quantos dados já temos
+    const dadosColetadosCount = Object.values(dadosColetados).filter(val => val && val.length > 0).length;
+    
+    // Se temos alguns dados mas falta nome
+    if (dadosFaltantes.includes('nome completo') && dadosColetadosCount > 0) {
+        const partes = [];
+        if (dadosColetados.data) partes.push(`data de nascimento (${dadosColetados.data})`);
+        if (dadosColetados.hora) partes.push(`hora (${dadosColetados.hora})`);
+        if (dadosColetados.local) partes.push(`cidade (${dadosColetados.local})`);
+        
+        return `✨ **Perfeito!** Tenho sua ${partes.join(', ')}. Para personalizar seu mapa astral, **está faltando apenas seu nome completo**. Pode me informar?`;
+    }
+    
+    // Se temos nome mas falta data
+    if (dadosFaltantes.includes('data de nascimento (DD/MM/AAAA)') && dadosColetados.nome) {
+        return `✨ **Obrigada, ${dadosColetados.nome}!** Para calcular seu mapa astral, **está faltando sua data de nascimento** no formato DD/MM/AAAA. Pode me informar?`;
+    }
+    
+    // Se temos vários dados mas falta cidade
+    if (dadosFaltantes.includes('cidade de nascimento') && dadosColetadosCount >= 2) {
+        const partes = [];
+        if (dadosColetados.nome) partes.push(`nome (${dadosColetados.nome})`);
+        if (dadosColetados.data) partes.push(`data (${dadosColetados.data})`);
+        if (dadosColetados.hora) partes.push(`hora (${dadosColetados.hora})`);
+        
+        return `✨ **Quase lá!** Tenho seus dados: ${partes.join(', ')}. **Está faltando apenas a cidade onde você nasceu**. Pode me informar?`;
+    }
+    
+    // Se falta apenas a hora (opcional)
+    if (dadosFaltantes.length === 1 && dadosFaltantes[0] === 'hora de nascimento (opcional, formato HH:MM)') {
+        return `✨ **Excelente!** Tenho todos os dados essenciais. Para calcular seu **ascendente com mais precisão**, você poderia informar sua **hora de nascimento**? Se não souber, posso fazer o mapa astral mesmo assim.`;
+    }
+    
+    // Mensagem genérica para múltiplos dados faltantes
+    if (dadosFaltantes.length > 0) {
+        const listaFaltantes = dadosFaltantes.map(d => {
+            if (d.includes('nome completo')) return '**nome completo**';
+            if (d.includes('data de nascimento')) return '**data de nascimento** (DD/MM/AAAA)';
+            if (d.includes('hora de nascimento')) return '**hora de nascimento** (opcional)';
+            if (d.includes('cidade de nascimento')) return '**cidade de nascimento**';
+            return d;
+        }).join(', ');
+        
+        return `✨ Para seu mapa astral completo, **está faltando**: ${listaFaltantes}. Pode me fornecer essas informações?`;
+    }
+    
+    // Mensagem padrão
+    return "Perfeito! Para seu mapa astral completo, preciso do seu **nome completo**, **data de nascimento** (formato DD/MM/AAAA), **hora de nascimento** (se souber) e **cidade de nascimento**. Pode me informar? ✨";
 }
 
 export async function getOpenAIResponse(messages) {
@@ -289,26 +425,31 @@ export async function getOpenAIResponse(messages) {
         if (servicoParaUsar === 'numerologia') {
             console.log('🎯 Iniciando fluxo de numerologia...');
             
-            // Verifica se já temos nome e data no histórico
-            const dadosUsuario = verificarDadosNumerologiaNoHistorico(historicoCompleto);
-            
-            if (dadosUsuario) {
-                console.log(`📊 Dados encontrados: ${dadosUsuario.nome}, ${dadosUsuario.data}`);
-                
-                // ✅ GERA RELATÓRIO NUMEROLÓGICO REAL
-                const relatorio = gerarRelatorioNumerologico(dadosUsuario.nome, dadosUsuario.data);
-                
-                if (relatorio.sucesso) {
-                    console.log('✅ Relatório numerológico gerado com sucesso!');
-                    return relatorio.relatorio;
-                } else {
-                    console.error('❌ Erro no relatório:', relatorio.erro);
-                    return "Encontrei seus dados, mas tive um problema técnico nos cálculos. Pode verificar se a data está no formato DD/MM/AAAA?";
-                }
+            // ✅ VERIFICA SE JÁ GEROU RELATÓRIO RECENTEMENTE
+            if (jaGerouRelatorioRecentemente(historicoCompleto, 'numerologia')) {
+                console.log('📝 Já gerou relatório de numerologia recentemente - usando IA geral');
             } else {
-                // Ainda não temos dados - pede nome e data
-                console.log('📝 Pedindo dados para numerologia...');
-                return "Perfeito! Para sua análise numerológica completa, preciso do seu **nome completo** e **data de nascimento** (no formato DD/MM/AAAA). Pode me informar? ✨";
+                // Verifica se já temos nome e data no histórico
+                const dadosUsuario = verificarDadosNumerologiaNoHistorico(historicoCompleto);
+                
+                if (dadosUsuario) {
+                    console.log(`📊 Dados encontrados: ${dadosUsuario.nome}, ${dadosUsuario.data}`);
+                    
+                    // ✅ GERA RELATÓRIO NUMEROLÓGICO REAL
+                    const relatorio = gerarRelatorioNumerologico(dadosUsuario.nome, dadosUsuario.data);
+                    
+                    if (relatorio.sucesso) {
+                        console.log('✅ Relatório numerológico gerado com sucesso!');
+                        return relatorio.relatorio;
+                    } else {
+                        console.error('❌ Erro no relatório:', relatorio.erro);
+                        return "Encontrei seus dados, mas tive um problema técnico nos cálculos. Pode verificar se a data está no formato DD/MM/AAAA?";
+                    }
+                } else {
+                    // Ainda não temos dados - pede nome e data
+                    console.log('📝 Pedindo dados para numerologia...');
+                    return "Perfeito! Para sua análise numerológica completa, preciso do seu **nome completo** e **data de nascimento** (no formato DD/MM/AAAA). Pode me informar? ✨";
+                }
             }
         }
 
@@ -318,26 +459,34 @@ export async function getOpenAIResponse(messages) {
         if (servicoParaUsar === 'mapa_astral') {
             console.log('🎯 Iniciando fluxo de mapa astral...');
             
-            // Verifica se já temos dados no histórico
-            const dadosUsuario = verificarDadosMapaAstralNoHistorico(historicoCompleto);
-            
-            if (dadosUsuario) {
-                console.log(`📊 Dados encontrados: ${dadosUsuario.nome}, ${dadosUsuario.data}, ${dadosUsuario.hora}, ${dadosUsuario.local}`);
-                
-                // ✅ GERA RELATÓRIO ASTRAL REAL
-                const relatorio = gerarRelatorioMapaAstral(dadosUsuario.nome, dadosUsuario.data, dadosUsuario.hora, dadosUsuario.local);
-                
-                if (relatorio.sucesso) {
-                    console.log('✅ Relatório de mapa astral gerado com sucesso!');
-                    return relatorio.relatorio;
-                } else {
-                    console.error('❌ Erro no relatório:', relatorio.erro);
-                    return "Encontrei seus dados, mas tive um problema técnico nos cálculos astrológicos. Pode verificar se a data está no formato DD/MM/AAAA?";
-                }
+            // ✅ VERIFICA SE JÁ GEROU RELATÓRIO RECENTEMENTE
+            if (jaGerouRelatorioRecentemente(historicoCompleto, 'mapa_astral')) {
+                console.log('📝 Já gerou relatório de mapa astral recentemente - usando IA geral');
             } else {
-                // Ainda não temos dados - pede dados
-                console.log('📝 Pedindo dados para mapa astral...');
-                return "Perfeito! Para seu mapa astral completo, preciso do seu **nome completo**, **data de nascimento** (formato DD/MM/AAAA), **hora de nascimento** (se souber, formato HH:MM) e **cidade de nascimento**. Pode me informar? ✨";
+                // Verifica se já temos dados no histórico
+                const dadosUsuario = verificarDadosMapaAstralNoHistorico(historicoCompleto);
+                
+                // ✅ VERIFICA DADOS FALTANTES
+                const dadosFaltantes = verificarDadosFaltantesMapaAstral(dadosUsuario);
+                
+                if (dadosFaltantes.length === 0) {
+                    // ✅ TEMOS TODOS OS DADOS - GERA RELATÓRIO
+                    console.log(`📊 Dados completos: ${dadosUsuario.nome}, ${dadosUsuario.data}, ${dadosUsuario.hora}, ${dadosUsuario.local}`);
+                    
+                    const relatorio = gerarRelatorioMapaAstral(dadosUsuario.nome, dadosUsuario.data, dadosUsuario.hora, dadosUsuario.local);
+                    
+                    if (relatorio.sucesso) {
+                        console.log('✅ Relatório de mapa astral gerado com sucesso!');
+                        return relatorio.relatorio;
+                    } else {
+                        console.error('❌ Erro no relatório:', relatorio.erro);
+                        return "Encontrei seus dados, mas tive um problema técnico nos cálculos astrológicos.";
+                    }
+                } else {
+                    // ✅ USA MENSAGEM ESPECÍFICA PARA DADOS FALTANTES
+                    console.log(`📝 Dados faltantes: ${dadosFaltantes.join(', ')}`);
+                    return gerarMensagemDadosFaltantes(dadosFaltantes, dadosUsuario);
+                }
             }
         }
 

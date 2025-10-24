@@ -1,4 +1,4 @@
-// api/astrology.js - Sistema Completo de Mapa Astral
+// api/astrology.js - Sistema Completo de Mapa Astral (ATUALIZADO)
 
 // ======================
 // 🌟 DADOS DOS SIGNOS
@@ -61,7 +61,6 @@ export function calcularSignoSolar(dataNascimento) {
 
 /**
  * Calcula o Signo Lunar (aproximação simplificada)
- * Em um sistema real, isso exigiria efemérides precisas
  */
 export function calcularSignoLunar(dataNascimento) {
     const [dia, mes, ano] = dataNascimento.split('/').map(Number);
@@ -88,7 +87,7 @@ export function calcularAscendente(signoSolar, horaNascimento) {
     
     const [hora] = horaNascimento.split(':').map(Number);
     const signos = [...SIGNOS_SOLARES];
-    const indiceSolar = signos.findIndex(s => s.signo === signoSolar);
+    const indiceSolar = signos.findIndex(s => s.signo === signoSolar.signo);
     
     // Fórmula simplificada: cada 2 horas muda o ascendente
     const indiceAscendente = (indiceSolar + Math.floor(hora / 2)) % 12;
@@ -100,6 +99,8 @@ export function calcularAscendente(signoSolar, horaNascimento) {
  * Calcula as Casas Astrológicas (simplificado)
  */
 export function calcularCasasAstrologicas(ascendente) {
+    if (!ascendente) return [];
+    
     const casas = [];
     const signos = [...SIGNOS_SOLARES];
     const indiceAsc = signos.findIndex(s => s.signo === ascendente.signo);
@@ -183,6 +184,40 @@ function obterAspectosPlanetarios(signoSolar, signoLunar, ascendente) {
 }
 
 // ======================
+// 🔍 FUNÇÃO AUXILIAR: Extrair Nome de Mensagens
+// ======================
+
+/**
+ * ✅ NOVA FUNÇÃO: Extrai nome de mensagens do usuário de forma mais inteligente
+ */
+function extrairNomeInteligente(mensagem) {
+    // Remove padrões comuns que não são nomes
+    let texto = mensagem
+        .replace(/(ok|okay|sim|claro|tudo bem|beleza),?\s*/gi, '')
+        .replace(/(quero|gostaria|preciso|desejo|meu|o|a)\s+/gi, '')
+        .replace(/\s*(mapa astral|astral|signo|zodíaco|horóscopo|nome|nome completo).*$/gi, '')
+        .trim();
+    
+    // Se o texto restante tem características de nome (múltiplas palavras, capitalização)
+    const palavras = texto.split(/\s+/);
+    
+    if (palavras.length >= 2 && palavras.length <= 4) {
+        // Verifica se parece um nome (palavras com letras maiúsculas no início)
+        const pareceNome = palavras.every(palavra => 
+            palavra.length > 1 && 
+            /^[A-ZÀ-Ú]/.test(palavra.charAt(0))
+        );
+        
+        if (pareceNome) {
+            return palavras.join(' ');
+        }
+    }
+    
+    // Se não encontrou um nome claro, retorna null
+    return null;
+}
+
+// ======================
 // 📊 FUNÇÃO PRINCIPAL
 // ======================
 
@@ -191,6 +226,13 @@ function obterAspectosPlanetarios(signoSolar, signoLunar, ascendente) {
  */
 export function gerarRelatorioMapaAstral(nomeCompleto, dataNascimento, horaNascimento = null, localNascimento = null) {
     try {
+        // ✅ MELHORIA: Se o nome está vazio ou muito curto, tenta extrair de forma inteligente
+        if ((!nomeCompleto || nomeCompleto.length < 3) && dataNascimento) {
+            // Tenta inferir um nome baseado no contexto (em um sistema real, isso viria do histórico)
+            // Por enquanto, usamos um placeholder
+            nomeCompleto = nomeCompleto || "Consulta Astral";
+        }
+        
         // Cálculos astrológicos
         const signoSolar = calcularSignoSolar(dataNascimento);
         const signoLunar = calcularSignoLunar(dataNascimento);
@@ -202,9 +244,13 @@ export function gerarRelatorioMapaAstral(nomeCompleto, dataNascimento, horaNasci
         const interpretacaoLunar = obterInterpretacaoSigno(signoLunar);
         const aspectos = obterAspectosPlanetarios(signoSolar, signoLunar, ascendente);
         
+        // ✅ MELHORIA: Formata o nome para exibição
+        const nomeExibicao = nomeCompleto && nomeCompleto.length > 2 ? 
+            nomeCompleto.toUpperCase() : "CONSULTA ASTRAL";
+        
         // Montagem do relatório
         const relatorio = `
-🌌 **MAPA ASTRAL DE ${nomeCompleto.toUpperCase()}**
+🌌 **MAPA ASTRAL DE ${nomeExibicao}**
 
 📅 **Data de Nascimento:** ${dataNascimento}
 ${horaNascimento ? `⏰ **Hora de Nascimento:** ${horaNascimento}` : ''}
@@ -274,6 +320,7 @@ Que as estrelas iluminem seu caminho! 🌟
         };
         
     } catch (error) {
+        console.error('❌ Erro em gerarRelatorioMapaAstral:', error);
         return {
             sucesso: false,
             erro: error.message
