@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sarah Kali • Acesso</title>
+    
+    <!-- Fontes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@300;400;500;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="login.css">
+</head>
+<body>
+    <!-- Partículas flutuantes -->
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <!-- Header -->
+            <div class="login-header">
+                <div class="title-wrapper">
+                    <h1 class="main-title">Sarah Kali</h1>
+                </div>
+                
+                <p class="subtitle">Acesso à Área de Consultas</p>
+            </div>
+
+            <!-- Formulário -->
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <div class="input-container">
+                        <input type="email" id="email" placeholder="seu@email.com" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Senha</label>
+                    <div class="input-container">
+                        <input type="password" id="password" placeholder="••••••••" required>
+                    </div>
+                </div>
+
+                <div class="form-options">
+                    <label class="checkbox">
+                        <input type="checkbox" id="remember">
+                        <span class="checkmark"></span>
+                        Manter conectado
+                    </label>
+                    <a href="forgot-password.html" class="forgot-link">Esqueceu a senha?</a>
+                </div>
+
+                <button type="submit" class="login-btn">
+                    <span class="btn-text">Entrar</span>
+                </button>
+            </form>
+
+            <div class="login-footer">
+                <p>Primeiro acesso? <a href="register.html">Solicitar conta</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('loginForm');
+            
+            // Funções auxiliares
+            function showLoading(button) {
+                const originalText = button.querySelector('.btn-text').textContent;
+                button.querySelector('.btn-text').textContent = 'Entrando...';
+                button.disabled = true;
+                return originalText;
+            }
+
+            function hideLoading(button, originalText) {
+                button.querySelector('.btn-text').textContent = originalText;
+                button.disabled = false;
+            }
+
+            function showMessage(message, type) {
+                // Remove mensagens anteriores
+                const existingMessage = document.querySelector('.message');
+                if (existingMessage) {
+                    existingMessage.remove();
+                }
+
+                // Cria nova mensagem
+                const messageEl = document.createElement('div');
+                messageEl.className = `message ${type}`;
+                messageEl.textContent = message;
+                messageEl.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    padding: 15px 20px;
+                    border-radius: 5px;
+                    color: white;
+                    font-weight: bold;
+                    z-index: 1000;
+                    background-color: ${type === 'success' ? '#4CAF50' : '#f44336'};
+                `;
+
+                document.body.appendChild(messageEl);
+
+                // Remove após 3 segundos
+                setTimeout(() => {
+                    if (messageEl.parentNode) {
+                        messageEl.remove();
+                    }
+                }, 3000);
+            }
+            
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const submitButton = this.querySelector('button[type="submit"]');
+                const originalText = showLoading(submitButton);
+
+                try {
+                    const email = document.getElementById('email').value;
+                    const password = document.getElementById('password').value;
+                    const rememberMe = document.getElementById('remember').checked;
+
+                    // FAZ O LOGIN
+                    await auth.login(email, password, rememberMe);
+                    showMessage('Login realizado com sucesso!', 'success');
+                    
+                    // REDIRECIONAMENTO CORRIGIDO - vai para home.html
+                    setTimeout(() => {
+                        window.location.href = '../home.html';
+                    }, 1000);
+
+                } catch (error) {
+                    showMessage(error.message, 'error');
+                    hideLoading(submitButton, originalText);
+                }
+            });
+
+            // VERIFICAÇÃO SEGURA DE REMEMBER ME
+            setTimeout(() => {
+                if (localStorage.getItem('rememberMe') === 'true' && auth.isLoggedIn()) {
+                    console.log('RememberMe ativo - redirecionando para home...');
+                    showMessage('Login automático realizado!', 'success');
+                    setTimeout(() => {
+                        window.location.href = '../home.html';
+                    }, 1000);
+                }
+            }, 1500);
+        });
+    </script>
+</body>
+</html>

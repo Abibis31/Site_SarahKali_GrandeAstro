@@ -48,7 +48,7 @@ app.get('/health', (req, res) => {
 // Rota raiz - Página principal
 app.get('/', (req, res) => {
     console.log('📄 Página principal acessada');
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'home.html'));
 });
 
 // ======================

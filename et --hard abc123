@@ -1,0 +1,30 @@
+[33mc805f80[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m feat: sistema completo de tratamento de dados faltantes
+[33m7a522ad[m feat: integra sistema de mapa astral com cálculos reais
+[33mc30c3ec[m feat: implementa sistema de numerologia com cálculos reais
+[33m32db687[m Correção do histórico do chat: implementação de database SQLite e envio de histórico completo
+[33m16db751[m migração para testes
+[33md53087a[m[33m ([m[1;31morigin/openai-gpt4[m[33m, [m[1;32mopenai-gpt4[m[33m)[m fix: correct variable name error and improve service detection
+[33m248c908[m fix: correct variable name error and improve service detection
+[33m06a56ac[m fix: correct variable name error and improve service detection
+[33m40f50b3[m in
+[33mdbcd053[m fix: maintain full conversation context in OpenAI requests
+[33m0b55f52[m feat: complete migration to OpenAI GPT-4 with natural conversation flow
+[33m4ce6c4c[m feat: implement OpenAI GPT-4 with full conversation context
+[33m0128a2f[m feat: migrate from Groq to OpenAI GPT-4
+[33mcf1852c[m fix: update Groq model to llama-3.1-8b-instant
+[33m5f4e0cb[m feat: complete AI integration with Groq API
+[33mcfa6a66[m fix: ultra simplified server for stability
+[33m62f3753[m feat: complete project refactor with secure configuration, optimized server, and robust chat API
+[33m132f3e4[m feat: activate chat function with basic response
+[33m8bb2754[m test: minimal version to debug crash
+[33mcaa1543[m fix: use correct groq model openai/gpt-oss-20b
+[33m3867f97[m fix: correct array handling in chat route
+[33mcaec811[m feat: ready for production deployment
+[33m274153a[m fix: add health check route and proper error handling
+[33mc265774[m fix: bind to 0.0.0.0 for railway deployment
+[33mc27a2fe[m fix: adjust port and scripts for railway deployment
+[33m7ec91b6[m Corrige integração com Groq e variáveis de ambiente
+[33mb2330e7[m feat: add Sarah Kali AI chat system
+[33m7dc5f7d[m feat: add gitignore file
+[33m716898f[m correção do mobile
+[33mae83e92[m first commit
