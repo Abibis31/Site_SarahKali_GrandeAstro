@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sarah Kali - Redirecionando</title>
+    <meta http-equiv="refresh" content="0; url=login/index.html">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            color: white;
+            font-family: 'Cinzel', serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        a {
+            color: #4A1D6B;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h2>Sarah Kali</h2>
+        <p>Redirecionando para o login...</p>
+        <p><a href="login/index.html">Clique aqui se não for redirecionado</a></p>
+    </div>
+    
+    <script>
+        setTimeout(() => {
+            window.location.href = 'login/index.html';
+        }, 1000);
+    </script>
+</body>
+</html>
