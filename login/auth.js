@@ -1,32 +1,18 @@
-// auth.js - Sistema completo de autenticação com registro local
+// auth.js - Sistema de autenticação com exportação para CSV
 
 class AuthSystem {
     constructor() {
         this.users = JSON.parse(localStorage.getItem('users')) || [];
         this.currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
         console.log('Sistema de auth inicializado. Usuários:', this.users.length);
-        this.init();
     }
 
-    init() {
-        console.log('Verificando autenticação...');
-        
-        // DEBUG - Verificar estado atual
-        console.log('DEBUG - Estado do auth:');
-        console.log('- currentUser:', this.currentUser);
-        console.log('- users no localStorage:', this.users.length);
-        console.log('- rememberMe:', localStorage.getItem('rememberMe'));
-        console.log('- pathname:', window.location.pathname);
-        
-        console.log('Estado de autenticação:', this.isLoggedIn() ? 'Logado' : 'Não logado');
-    }
-
-    // Método para registrar eventos na "planilha" local
-    logToLocalSheet(user, action = 'login') {
+    // Registrar eventos e criar arquivo CSV
+    logToSheet(user, action = 'login') {
         try {
-            console.log(`📊 Registrando ${action} na planilha local...`);
+            console.log(`📊 Registrando ${action}...`);
             
-            // Obter ou criar a planilha no localStorage
+            // Obter ou criar os dados
             const sheetData = JSON.parse(localStorage.getItem('loginRecords')) || [];
             
             // Novo registro
@@ -35,34 +21,60 @@ class AuthSystem {
                 time: new Date().toLocaleTimeString('pt-BR'),
                 action: action,
                 name: user.name || 'N/A',
-                email: user.email,
-                timestamp: new Date().toISOString()
+                email: user.email
             };
             
             // Adicionar ao array
             sheetData.push(newRecord);
             
-            // Manter apenas os últimos 1000 registros (opcional)
-            if (sheetData.length > 1000) {
-                sheetData.splice(0, sheetData.length - 1000);
-            }
-            
             // Salvar no localStorage
             localStorage.setItem('loginRecords', JSON.stringify(sheetData));
             
-            console.log(`✅ ${action} registrado na planilha local. Total: ${sheetData.length} registros`);
-            console.log('Último registro:', newRecord);
+            console.log(`✅ ${action} registrado. Total: ${sheetData.length} registros`);
+            
+            // CRIAR ARQUIVO CSV FÍSICO
+            this.createCSVFile(sheetData);
             
         } catch (error) {
-            console.error(`❌ Erro ao registrar ${action} na planilha local:`, error);
+            console.error(`❌ Erro ao registrar ${action}:`, error);
+        }
+    }
+
+    // Criar arquivo CSV físico
+    createCSVFile(records) {
+        try {
+            // Cabeçalho do CSV
+            let csv = 'Data,Hora,Ação,Nome,Email\n';
+            
+            // Adicionar todos os registros
+            records.forEach(record => {
+                csv += `"${record.date}","${record.time}","${record.action}","${record.name}","${record.email}"\n`;
+            });
+            
+            // Criar arquivo
+            const blob = new Blob([csv], { 
+                type: 'text/csv;charset=utf-8;' 
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'planilha_logins.csv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            console.log('📁 Arquivo CSV criado: planilha_logins.csv');
+            
+        } catch (error) {
+            console.error('❌ Erro ao criar arquivo CSV:', error);
         }
     }
 
     // Cadastrar novo usuário
     register(userData) {
         return new Promise((resolve, reject) => {
-            console.log('Iniciando cadastro para:', userData.email);
-            
             try {
                 // Validações
                 if (!userData.name || !userData.email || !userData.password) {
@@ -77,7 +89,6 @@ class AuthSystem {
                     throw new Error('As senhas não coincidem');
                 }
 
-                // Verifica se o email já existe
                 if (this.users.find(user => user.email === userData.email)) {
                     throw new Error('Este email já está cadastrado');
                 }
@@ -91,28 +102,18 @@ class AuthSystem {
                     createdAt: new Date().toISOString()
                 };
 
-                console.log('Novo usuário criado:', newUser);
                 this.users.push(newUser);
                 this.saveUsers();
-                console.log('Usuário salvo com sucesso');
 
-                // REGISTRAR CADASTRO NA PLANILHA LOCAL
-                this.logToLocalSheet(newUser, 'register');
+                // REGISTRAR CADASTRO E CRIAR ARQUIVO
+                this.logToSheet(newUser, 'register');
 
-                // Loga o usuário automaticamente após o cadastro
-                console.log('Fazendo login automático...');
+                // Login automático
                 this.login(userData.email, userData.password)
-                    .then(user => {
-                        console.log('Login automático bem-sucedido:', user);
-                        resolve(user);
-                    })
-                    .catch(loginError => {
-                        console.error('Erro no login automático:', loginError);
-                        reject(new Error('Cadastro realizado, mas falha no login automático'));
-                    });
+                    .then(resolve)
+                    .catch(() => reject(new Error('Cadastro realizado, mas falha no login automático')));
 
             } catch (error) {
-                console.error('Erro no cadastro:', error);
                 reject(error);
             }
         });
@@ -121,30 +122,25 @@ class AuthSystem {
     // Login
     login(email, password, rememberMe = false) {
         return new Promise((resolve, reject) => {
-            console.log('Tentando login para:', email);
-            
             try {
                 const user = this.users.find(u => u.email === email && u.password === password);
                 
                 if (user) {
                     this.currentUser = user;
                     localStorage.setItem('currentUser', JSON.stringify(user));
-                    console.log('Login bem-sucedido:', user);
                     
                     if (rememberMe) {
                         localStorage.setItem('rememberMe', 'true');
                     }
                     
-                    // REGISTRAR LOGIN NA PLANILHA LOCAL
-                    this.logToLocalSheet(user, 'login');
+                    // REGISTRAR LOGIN E CRIAR ARQUIVO
+                    this.logToSheet(user, 'login');
                     
                     resolve(user);
                 } else {
-                    console.log('Login falhou: email ou senha incorretos');
                     reject(new Error('Email ou senha incorretos'));
                 }
             } catch (error) {
-                console.error('Erro no processo de login:', error);
                 reject(new Error('Erro interno no sistema de login'));
             }
         });
@@ -157,14 +153,10 @@ class AuthSystem {
                 const user = this.users.find(u => u.email === email);
                 
                 if (user) {
-                    // Em um sistema real, aqui enviaríamos um email
                     const resetToken = Math.random().toString(36).substring(2, 15);
                     user.resetToken = resetToken;
-                    user.resetTokenExpiry = Date.now() + 3600000; // 1 hora
+                    user.resetTokenExpiry = Date.now() + 3600000;
                     this.saveUsers();
-                    
-                    // Simula o envio de email
-                    console.log(`Link de recuperação simulado: reset-password.html?token=${resetToken}`);
                     
                     resolve({
                         message: 'Um link de recuperação foi enviado para seu email',
@@ -174,7 +166,6 @@ class AuthSystem {
                     reject(new Error('Email não encontrado'));
                 }
             } catch (error) {
-                console.error('Erro na recuperação de senha:', error);
                 reject(new Error('Erro interno no sistema de recuperação'));
             }
         });
@@ -196,7 +187,6 @@ class AuthSystem {
                     reject(new Error('Token inválido ou expirado'));
                 }
             } catch (error) {
-                console.error('Erro ao redefinir senha:', error);
                 reject(new Error('Erro interno ao redefinir senha'));
             }
         });
@@ -204,12 +194,9 @@ class AuthSystem {
 
     // Logout
     logout() {
-        console.log('Fazendo logout...');
         this.currentUser = null;
         localStorage.removeItem('currentUser');
         localStorage.removeItem('rememberMe');
-        
-        // Redireciona para o login
         window.location.href = 'login/index.html';
     }
 
@@ -225,13 +212,7 @@ class AuthSystem {
 
     // Salvar usuários no localStorage
     saveUsers() {
-        try {
-            localStorage.setItem('users', JSON.stringify(this.users));
-            console.log('Usuários salvos no localStorage. Total:', this.users.length);
-        } catch (error) {
-            console.error('Erro ao salvar usuários no localStorage:', error);
-            throw new Error('Erro ao salvar dados');
-        }
+        localStorage.setItem('users', JSON.stringify(this.users));
     }
 
     // Verificar força da senha
@@ -239,26 +220,18 @@ class AuthSystem {
         const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
         const mediumRegex = /^(((?=.*[a-z])(?=.*[A-Z]))|((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{6,})/;
 
-        if (strongRegex.test(password)) {
-            return 'strong';
-        } else if (mediumRegex.test(password)) {
-            return 'medium';
-        } else {
-            return 'weak';
-        }
+        if (strongRegex.test(password)) return 'strong';
+        if (mediumRegex.test(password)) return 'medium';
+        return 'weak';
     }
 }
 
-// Inicializar sistema de autenticação
-console.log('Inicializando sistema de autenticação...');
+// Inicializar sistema
 const auth = new AuthSystem();
-
-// Funções globais para uso nos HTMLs
 window.auth = auth;
 
-// Utilitários para forms
+// Funções auxiliares
 function showLoading(button) {
-    console.log('Mostrando loading...');
     const originalText = button.innerHTML;
     button.innerHTML = '<div class="loading-spinner"></div>';
     button.disabled = true;
@@ -266,21 +239,14 @@ function showLoading(button) {
 }
 
 function hideLoading(button, originalText) {
-    console.log('Escondendo loading...');
     button.innerHTML = originalText;
     button.disabled = false;
 }
 
 function showMessage(message, type = 'success') {
-    console.log(`Mostrando mensagem [${type}]:`, message);
-    
-    // Remove mensagens existentes
     const existingMessage = document.querySelector('.message-container');
-    if (existingMessage) {
-        existingMessage.remove();
-    }
+    if (existingMessage) existingMessage.remove();
 
-    // Cria nova mensagem
     const messageDiv = document.createElement('div');
     messageDiv.className = `message-container ${type}`;
     messageDiv.innerHTML = `
@@ -289,19 +255,14 @@ function showMessage(message, type = 'success') {
             <span class="message-text">${message}</span>
         </div>
     `;
-
     document.body.appendChild(messageDiv);
 
-    // Remove após 5 segundos
-    setTimeout(() => {
-        if (messageDiv.parentNode) {
-            messageDiv.remove();
-        }
-    }, 5000);
+    setTimeout(() => messageDiv.remove(), 5000);
 }
 
 // CSS para mensagens
-const messageStyles = `
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `
 .message-container {
     position: fixed;
     top: 20px;
@@ -309,17 +270,14 @@ const messageStyles = `
     z-index: 1000;
     animation: slideInRight 0.3s ease-out;
 }
-
 .message-container.success {
     background: linear-gradient(135deg, #2AA198, #4A1D6B);
     border: 1px solid rgba(42, 161, 152, 0.3);
 }
-
 .message-container.error {
     background: linear-gradient(135deg, #ff4757, #c9a227);
     border: 1px solid rgba(255, 71, 87, 0.3);
 }
-
 .message-content {
     color: white;
     padding: 12px 20px;
@@ -330,27 +288,26 @@ const messageStyles = `
     gap: 10px;
     backdrop-filter: blur(10px);
 }
-
 .message-icon {
     font-weight: bold;
     font-size: 1.1rem;
 }
-
 @keyframes slideInRight {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 `;
-
-// Adicionar estilos das mensagens
-const styleSheet = document.createElement('style');
-styleSheet.textContent = messageStyles;
 document.head.appendChild(styleSheet);
-
-console.log('Auth system carregado com sucesso!');
