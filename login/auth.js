@@ -1,4 +1,4 @@
-// auth.js - Sistema completo de autenticação com Google Sheets
+// auth.js - Sistema completo de autenticação com registro local
 
 class AuthSystem {
     constructor() {
@@ -18,43 +18,43 @@ class AuthSystem {
         console.log('- rememberMe:', localStorage.getItem('rememberMe'));
         console.log('- pathname:', window.location.pathname);
         
-        // REMOVIDO: Redirecionamento automático
-        // Agora o redirecionamento só acontece manualmente após login
         console.log('Estado de autenticação:', this.isLoggedIn() ? 'Logado' : 'Não logado');
     }
 
-    // Método para registrar login no Google Sheets
-    async logToGoogleSheets(user) {
+    // Método para registrar eventos na "planilha" local
+    logToLocalSheet(user, action = 'login') {
         try {
-            console.log('📊 Registrando login no Google Sheets...');
+            console.log(`📊 Registrando ${action} na planilha local...`);
             
-            // Obter IP aproximado
-            const ipResponse = await fetch('https://api.ipify.org?format=json');
-            const ipData = await ipResponse.json();
-            const userIP = ipData.ip;
-
-            // URL do Google Apps Script
-            const scriptURL = 'https://script.google.com/macros/s/AKfycbyCyG7z8F6s36DEs-999YFw9svjWo1-QWt-akebSLAXHYXaqLDuyoup4n_r-FngdnRr/exec';
+            // Obter ou criar a planilha no localStorage
+            const sheetData = JSON.parse(localStorage.getItem('loginRecords')) || [];
             
-            // Criar form data (funciona melhor com Google Apps Script)
-            const formData = new FormData();
-            formData.append('name', user.name || 'N/A');
-            formData.append('email', user.email);
-            formData.append('ip', userIP);
-            formData.append('timestamp', new Date().toISOString());
-            formData.append('userAgent', navigator.userAgent);
-
-            // Fazer a requisição
-            const response = await fetch(scriptURL, {
-                method: 'POST',
-                body: formData
-            });
-
-            console.log('✅ Login registrado no Google Sheets');
+            // Novo registro
+            const newRecord = {
+                date: new Date().toLocaleDateString('pt-BR'),
+                time: new Date().toLocaleTimeString('pt-BR'),
+                action: action,
+                name: user.name || 'N/A',
+                email: user.email,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Adicionar ao array
+            sheetData.push(newRecord);
+            
+            // Manter apenas os últimos 1000 registros (opcional)
+            if (sheetData.length > 1000) {
+                sheetData.splice(0, sheetData.length - 1000);
+            }
+            
+            // Salvar no localStorage
+            localStorage.setItem('loginRecords', JSON.stringify(sheetData));
+            
+            console.log(`✅ ${action} registrado na planilha local. Total: ${sheetData.length} registros`);
+            console.log('Último registro:', newRecord);
             
         } catch (error) {
-            console.error('❌ Erro ao registrar no Google Sheets:', error);
-            // Não impede o login se der erro
+            console.error(`❌ Erro ao registrar ${action} na planilha local:`, error);
         }
     }
 
@@ -96,6 +96,9 @@ class AuthSystem {
                 this.saveUsers();
                 console.log('Usuário salvo com sucesso');
 
+                // REGISTRAR CADASTRO NA PLANILHA LOCAL
+                this.logToLocalSheet(newUser, 'register');
+
                 // Loga o usuário automaticamente após o cadastro
                 console.log('Fazendo login automático...');
                 this.login(userData.email, userData.password)
@@ -115,7 +118,7 @@ class AuthSystem {
         });
     }
 
-    // Login - ATUALIZADO COM GOOGLE SHEETS
+    // Login
     login(email, password, rememberMe = false) {
         return new Promise((resolve, reject) => {
             console.log('Tentando login para:', email);
@@ -132,8 +135,8 @@ class AuthSystem {
                         localStorage.setItem('rememberMe', 'true');
                     }
                     
-                    // REGISTRAR NO GOOGLE SHEETS - NOVA FUNCIONALIDADE
-                    this.logToGoogleSheets(user);
+                    // REGISTRAR LOGIN NA PLANILHA LOCAL
+                    this.logToLocalSheet(user, 'login');
                     
                     resolve(user);
                 } else {
@@ -199,14 +202,14 @@ class AuthSystem {
         });
     }
 
-    // Logout - CORRIGIDO
+    // Logout
     logout() {
         console.log('Fazendo logout...');
         this.currentUser = null;
         localStorage.removeItem('currentUser');
         localStorage.removeItem('rememberMe');
         
-        // REDIRECIONAMENTO CORRIGIDO - vai para login/index.html
+        // Redireciona para o login
         window.location.href = 'login/index.html';
     }
 
