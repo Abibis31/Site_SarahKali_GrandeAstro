@@ -1,4 +1,4 @@
-// auth.js - Sistema completo de autenticação (SEM REDIRECIONAMENTO AUTOMÁTICO)
+// auth.js - Sistema completo de autenticação com Google Sheets
 
 class AuthSystem {
     constructor() {
@@ -21,6 +21,41 @@ class AuthSystem {
         // REMOVIDO: Redirecionamento automático
         // Agora o redirecionamento só acontece manualmente após login
         console.log('Estado de autenticação:', this.isLoggedIn() ? 'Logado' : 'Não logado');
+    }
+
+    // Método para registrar login no Google Sheets
+    async logToGoogleSheets(user) {
+        try {
+            console.log('📊 Registrando login no Google Sheets...');
+            
+            // Obter IP aproximado
+            const ipResponse = await fetch('https://api.ipify.org?format=json');
+            const ipData = await ipResponse.json();
+            const userIP = ipData.ip;
+
+            // URL do Google Apps Script
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbyCyG7z8F6s36DEs-999YFw9svjWo1-QWt-akebSLAXHYXaqLDuyoup4n_r-FngdnRr/exec';
+            
+            // Criar form data (funciona melhor com Google Apps Script)
+            const formData = new FormData();
+            formData.append('name', user.name || 'N/A');
+            formData.append('email', user.email);
+            formData.append('ip', userIP);
+            formData.append('timestamp', new Date().toISOString());
+            formData.append('userAgent', navigator.userAgent);
+
+            // Fazer a requisição
+            const response = await fetch(scriptURL, {
+                method: 'POST',
+                body: formData
+            });
+
+            console.log('✅ Login registrado no Google Sheets');
+            
+        } catch (error) {
+            console.error('❌ Erro ao registrar no Google Sheets:', error);
+            // Não impede o login se der erro
+        }
     }
 
     // Cadastrar novo usuário
@@ -80,7 +115,7 @@ class AuthSystem {
         });
     }
 
-    // Login
+    // Login - ATUALIZADO COM GOOGLE SHEETS
     login(email, password, rememberMe = false) {
         return new Promise((resolve, reject) => {
             console.log('Tentando login para:', email);
@@ -96,6 +131,9 @@ class AuthSystem {
                     if (rememberMe) {
                         localStorage.setItem('rememberMe', 'true');
                     }
+                    
+                    // REGISTRAR NO GOOGLE SHEETS - NOVA FUNCIONALIDADE
+                    this.logToGoogleSheets(user);
                     
                     resolve(user);
                 } else {
@@ -125,7 +163,10 @@ class AuthSystem {
                     // Simula o envio de email
                     console.log(`Link de recuperação simulado: reset-password.html?token=${resetToken}`);
                     
-                    resolve('Um link de recuperação foi enviado para seu email');
+                    resolve({
+                        message: 'Um link de recuperação foi enviado para seu email',
+                        token: resetToken
+                    });
                 } else {
                     reject(new Error('Email não encontrado'));
                 }
