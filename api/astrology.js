@@ -247,40 +247,6 @@ function obterEmojiAspecto(influencia) {
 }
 
 // ======================
-// 🔍 FUNÇÃO AUXILIAR: Extrair Nome de Mensagens
-// ======================
-
-/**
- * ✅ NOVA FUNÇÃO: Extrai nome de mensagens do usuário de forma mais inteligente
- */
-function extrairNomeInteligente(mensagem) {
-    // Remove padrões comuns que não são nomes
-    let texto = mensagem
-        .replace(/(ok|okay|sim|claro|tudo bem|beleza),?\s*/gi, '')
-        .replace(/(quero|gostaria|preciso|desejo|meu|o|a)\s+/gi, '')
-        .replace(/\s*(mapa astral|astral|signo|zodíaco|horóscopo|nome|nome completo).*$/gi, '')
-        .trim();
-    
-    // Se o texto restante tem características de nome (múltiplas palavras, capitalização)
-    const palavras = texto.split(/\s+/);
-    
-    if (palavras.length >= 2 && palavras.length <= 4) {
-        // Verifica se parece um nome (palavras com letras maiúsculas no início)
-        const pareceNome = palavras.every(palavra => 
-            palavra.length > 1 && 
-            /^[A-ZÀ-Ú]/.test(palavra.charAt(0))
-        );
-        
-        if (pareceNome) {
-            return palavras.join(' ');
-        }
-    }
-    
-    // Se não encontrou um nome claro, retorna null
-    return null;
-}
-
-// ======================
 // 📊 FUNÇÃO PRINCIPAL
 // ======================
 

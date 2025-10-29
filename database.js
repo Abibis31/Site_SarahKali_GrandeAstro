@@ -59,6 +59,25 @@ export class ChatDatabase {
         });
     }
 
+    // ✅ NOVO: Buscar comprovantes por session
+    async getComprovantes(sessionId) {
+        return new Promise((resolve, reject) => {
+            this.db.all(
+                `SELECT content FROM conversations 
+                 WHERE session_id = ? AND role = 'comprovante'
+                 ORDER BY timestamp DESC`,
+                [sessionId],
+                (err, rows) => {
+                    if (err) reject(err);
+                    else {
+                        const comprovantes = rows.map(row => JSON.parse(row.content));
+                        resolve(comprovantes);
+                    }
+                }
+            );
+        });
+    }
+
     // Método para fechar a conexão (opcional)
     close() {
         this.db.close();

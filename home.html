@@ -264,6 +264,40 @@
             </div>
         </div>
         
+        <!-- ✅ ÁREA DE UPLOAD DE COMPROVANTE -->
+        <div class="chat-upload-container" id="uploadContainer" style="display: none;">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📎</div>
+                <div class="upload-text">
+                    <h4>Enviar Comprovante PIX</h4>
+                    <p>Arraste ou clique para enviar comprovante (JPG, PNG, PDF)</p>
+                </div>
+                <input type="file" id="fileInput" class="file-input" accept=".jpg,.jpeg,.png,.pdf,.gif,.webp">
+                <button class="upload-btn" id="uploadBtn">Selecionar Arquivo</button>
+            </div>
+            
+            <div class="file-preview" id="filePreview">
+                <div class="file-info">
+                    <div class="file-icon">📄</div>
+                    <div class="file-details">
+                        <div class="file-name" id="fileName">arquivo.jpg</div>
+                        <div class="file-size" id="fileSize">0 KB</div>
+                    </div>
+                    <button class="file-remove" id="fileRemove">×</button>
+                </div>
+                <div class="upload-progress">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="upload-status">
+                    <span id="uploadStatus">Pronto para enviar</span>
+                    <span id="uploadPercentage">0%</span>
+                </div>
+                <button class="upload-btn" id="sendFileBtn" style="width: 100%; margin-top: 1rem;">
+                    📤 Enviar Comprovante
+                </button>
+            </div>
+        </div>
+        
         <div class="chat-input-container">
             <form class="chat-form" id="chatForm">
                 <input 
@@ -309,7 +343,7 @@
             navMenu.classList.toggle('active');
         });
 
-        // ===== SISTEMA DE CHAT CORRIGIDO =====
+        // ===== SISTEMA DE CHAT E UPLOAD =====
         const chatFloat = document.getElementById('chatFloat');
         const chatModal = document.getElementById('chatModal');
         const chatClose = document.getElementById('chatClose');
@@ -317,11 +351,26 @@
         const chatInput = document.getElementById('chatInput');
         const chatMessages = document.getElementById('chatMessages');
         const suggestionBtns = document.querySelectorAll('.suggestion-btn');
+        
+        // ✅ ELEMENTOS DO UPLOAD
+        const uploadContainer = document.getElementById('uploadContainer');
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const filePreview = document.getElementById('filePreview');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const fileRemove = document.getElementById('fileRemove');
+        const progressBar = document.getElementById('progressBar');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const uploadPercentage = document.getElementById('uploadPercentage');
+        const sendFileBtn = document.getElementById('sendFileBtn');
 
         let isLoading = false;
         let lastMessageTime = 0;
+        let currentFile = null;
 
-        // ✅ HISTÓRICO DE MENSAGENS - Armazena toda a conversa
+        // ✅ HISTÓRICO DE MENSAGENS
         let chatHistory = [
             {
                 role: 'assistant',
@@ -329,19 +378,63 @@
             }
         ];
 
-        // ✅ SESSION ID ÚNICO para cada conversa
+        // ✅ SESSION ID ÚNICO
         const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
         // ✅ FUNÇÃO PARA RENDERIZAR TODO O HISTÓRICO
         function renderChatHistory() {
             chatMessages.innerHTML = '';
             chatHistory.forEach(msg => {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `message ${msg.role}`;
-                messageDiv.innerHTML = `<div class="message-content">${msg.content}</div>`;
-                chatMessages.appendChild(messageDiv);
+                if (msg.role === 'comprovante') {
+                    // Renderizar mensagem de comprovante
+                    const comprovanteData = JSON.parse(msg.content);
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message comprovante';
+                    messageDiv.innerHTML = `
+                        <div class="message-content">
+                            <div class="comprovante-info">
+                                <div class="comprovante-icon">📎</div>
+                                <div class="comprovante-text">
+                                    <h5>Comprovante Enviado</h5>
+                                    <p>${comprovanteData.originalName} • ${formatFileSize(comprovanteData.size)}</p>
+                                </div>
+                            </div>
+                            <div class="comprovante-actions">
+                                <a href="${comprovanteData.url}" target="_blank" class="comprovante-btn">Ver Arquivo</a>
+                                <button class="comprovante-btn" onclick="downloadFile('${comprovanteData.url}', '${comprovanteData.originalName}')">Download</button>
+                            </div>
+                        </div>
+                    `;
+                    chatMessages.appendChild(messageDiv);
+                } else {
+                    // Renderizar mensagem normal
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `message ${msg.role}`;
+                    messageDiv.innerHTML = `<div class="message-content">${msg.content}</div>`;
+                    chatMessages.appendChild(messageDiv);
+                }
             });
             chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // ✅ FUNÇÃO PARA FORMATAR TAMANHO DO ARQUIVO
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // ✅ FUNÇÃO PARA DOWNLOAD DE ARQUIVO
+        function downloadFile(url, filename) {
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         // ✅ INICIALIZAR CHAT COM HISTÓRICO
@@ -367,6 +460,161 @@
             }
         });
 
+        // ✅ SISTEMA DE UPLOAD DE ARQUIVOS
+        uploadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // Drag and Drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        fileRemove.addEventListener('click', () => {
+            resetFileUpload();
+        });
+
+        // ✅ PROCESSAR SELEÇÃO DE ARQUIVO
+        function handleFileSelect(file) {
+            // Validar tipo de arquivo
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('Tipo de arquivo não permitido. Use JPG, PNG, GIF, PDF ou WEBP.');
+                return;
+            }
+
+            // Validar tamanho (10MB máximo)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('Arquivo muito grande. O tamanho máximo é 10MB.');
+                return;
+            }
+
+            currentFile = file;
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            filePreview.classList.add('active');
+            uploadStatus.textContent = 'Pronto para enviar';
+            uploadPercentage.textContent = '0%';
+            progressBar.style.width = '0%';
+        }
+
+        // ✅ RESETAR UPLOAD
+        function resetFileUpload() {
+            currentFile = null;
+            fileInput.value = '';
+            filePreview.classList.remove('active');
+            uploadStatus.textContent = 'Pronto para enviar';
+            uploadPercentage.textContent = '0%';
+            progressBar.style.width = '0%';
+        }
+
+        // ✅ ENVIAR ARQUIVO PARA O SERVIDOR
+        sendFileBtn.addEventListener('click', async () => {
+            if (!currentFile) {
+                alert('Por favor, selecione um arquivo primeiro.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('comprovante', currentFile);
+            formData.append('sessionId', sessionId);
+            formData.append('servico', 'pendente'); // Será atualizado quando o serviço for escolhido
+
+            try {
+                sendFileBtn.disabled = true;
+                uploadStatus.textContent = 'Enviando...';
+
+                const xhr = new XMLHttpRequest();
+                
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        progressBar.style.width = percentComplete + '%';
+                        uploadPercentage.textContent = Math.round(percentComplete) + '%';
+                    }
+                });
+
+                xhr.addEventListener('load', () => {
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.success) {
+                            uploadStatus.textContent = 'Enviado com sucesso! ✅';
+                            
+                            // ✅ ADICIONAR COMPROVANTE AO HISTÓRICO
+                            chatHistory.push({
+                                role: 'comprovante',
+                                content: JSON.stringify({
+                                    type: 'comprovante',
+                                    fileName: response.file.name,
+                                    originalName: response.file.name,
+                                    mimeType: response.file.type,
+                                    size: response.file.size,
+                                    servico: 'pendente',
+                                    timestamp: new Date().toISOString(),
+                                    url: response.file.url
+                                })
+                            });
+                            
+                            renderChatHistory();
+                            
+                            // ✅ ADICIONAR MENSAGEM DE CONFIRMAÇÃO DA SARAH
+                            setTimeout(() => {
+                                chatHistory.push({
+                                    role: 'assistant',
+                                    content: '✨ **Comprovante recebido!** Agradeço pelo pagamento. Vou verificar e em instantes começaremos sua consulta espiritual! 🔮'
+                                });
+                                renderChatHistory();
+                            }, 1000);
+                            
+                            resetFileUpload();
+                        } else {
+                            uploadStatus.textContent = 'Erro no envio: ' + response.message;
+                        }
+                    } else {
+                        uploadStatus.textContent = 'Erro no servidor';
+                    }
+                    sendFileBtn.disabled = false;
+                });
+
+                xhr.addEventListener('error', () => {
+                    uploadStatus.textContent = 'Erro de conexão';
+                    sendFileBtn.disabled = false;
+                });
+
+                xhr.open('POST', '/api/upload-comprovante');
+                xhr.send(formData);
+
+            } catch (error) {
+                console.error('Erro no upload:', error);
+                uploadStatus.textContent = 'Erro no envio';
+                sendFileBtn.disabled = false;
+            }
+        });
+
         // Sugestões de Perguntas
         suggestionBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -376,17 +624,22 @@
             });
         });
 
-        // ✅ ENVIAR MENSAGEM CORRIGIDO - ENVIA HISTÓRICO COMPLETO
+        // ✅ ENVIAR MENSAGEM CORRIGIDO
         chatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const now = Date.now();
-            if (now - lastMessageTime < 1000) return; // Prevenir spam
+            if (now - lastMessageTime < 1000) return;
             
             const message = chatInput.value.trim();
             if (!message || isLoading) return;
             
             lastMessageTime = now;
+            
+            // ✅ MOSTRAR ÁREA DE UPLOAD SE FOR PEDIDO DE COMPROVANTE
+            if (message.toLowerCase().includes('comprovante') || message.toLowerCase().includes('pix')) {
+                uploadContainer.style.display = 'block';
+            }
             
             // ✅ ADICIONA MENSAGEM DO USUÁRIO AO HISTÓRICO
             chatHistory.push({ role: 'user', content: message });
@@ -402,8 +655,8 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        messages: chatHistory,  // ✅ AGORA ENVIA TODAS AS MENSAGENS
-                        sessionId: sessionId   // ✅ ID DA CONVERSA
+                        messages: chatHistory,
+                        sessionId: sessionId
                     })
                 });
 
