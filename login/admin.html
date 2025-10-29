@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin • Sarah Kali</title>
+    
+    <!-- Fontes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@300;400;500;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <style>
+        :root {
+            --primary-color: #6d28d9;
+            --primary-dark: #5b21b6;
+            --secondary-color: #c084fc;
+            --accent-color: #f0abfc;
+            --dark-bg: #0f0f23;
+            --card-bg: #1a1a2e;
+            --card-border: #2d2d42;
+            --text-light: #f8fafc;
+            --text-medium: #cbd5e1;
+            --text-dark: #94a3b8;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --gradient-primary: linear-gradient(135deg, #6d28d9, #c084fc);
+            --gradient-secondary: linear-gradient(135deg, #c084fc, #f0abfc);
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Crimson Text', serif;
+            background: var(--dark-bg);
+            color: var(--text-light);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Partículas flutuantes */
+        .floating-element {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float 15s infinite linear;
+        }
+
+        .floating-element:nth-child(2) {
+            width: 12px;
+            height: 12px;
+            background: var(--secondary-color);
+            animation-duration: 20s;
+            top: 20%;
+            left: 80%;
+        }
+
+        .floating-element:nth-child(3) {
+            width: 6px;
+            height: 6px;
+            background: var(--primary-color);
+            animation-duration: 25s;
+            top: 60%;
+            left: 10%;
+        }
+
+        .floating-element:nth-child(4) {
+            width: 10px;
+            height: 10px;
+            background: var(--accent-color);
+            animation-duration: 18s;
+            top: 80%;
+            left: 70%;
+        }
+
+        .floating-element:nth-child(5) {
+            width: 14px;
+            height: 14px;
+            background: var(--secondary-color);
+            animation-duration: 22s;
+            top: 30%;
+            left: 30%;
+        }
+
+        .floating-element:nth-child(6) {
+            width: 5px;
+            height: 5px;
+            background: var(--primary-color);
+            animation-duration: 30s;
+            top: 70%;
+            left: 90%;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) translateX(0) rotate(0deg);
+                opacity: 0.3;
+            }
+            25% {
+                transform: translateY(-20px) translateX(10px) rotate(90deg);
+                opacity: 0.5;
+            }
+            50% {
+                transform: translateY(-40px) translateX(-10px) rotate(180deg);
+                opacity: 0.7;
+            }
+            75% {
+                transform: translateY(-20px) translateX(5px) rotate(270deg);
+                opacity: 0.5;
+            }
+            100% {
+                transform: translateY(0) translateX(0) rotate(360deg);
+                opacity: 0.3;
+            }
+        }
+
+        /* Container principal */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        /* Card principal */
+        .login-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 1200px;
+            overflow: hidden;
+            border: 1px solid var(--card-border);
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Header */
+        .login-header {
+            background: var(--gradient-primary);
+            padding: 2.5rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            opacity: 0.3;
+        }
+
+        .title-wrapper {
+            position: relative;
+            z-index: 2;
+        }
+
+        .main-title {
+            font-family: 'Cinzel', serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        /* Conteúdo Admin */
+        #adminContent {
+            padding: 2rem;
+        }
+
+        /* Estatísticas */
+        .admin-stats {
+            margin-bottom: 2.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 1px solid var(--card-border);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--gradient-primary);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-light);
+        }
+
+        .stat-card h4 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+        }
+
+        .stat-number {
+            font-family: 'Cinzel', serif;
+            font-size: 2.2rem;
+            font-weight: 600;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* Container de Logs */
+        .logs-container {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid var(--card-border);
+            margin-bottom: 2rem;
+        }
+
+        .logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .logs-header h3 {
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+
+        .logs-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        /* Tabela de Logs */
+        .logs-table {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 1rem 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        th {
+            background: var(--gradient-primary);
+            font-family: 'Cinzel', serif;
+            font-weight: 600;
+            color: white;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Badges de Status */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-badge.new-account {
+            background: rgba(139, 69, 255, 0.2);
+            color: #8b45ff;
+            border: 1px solid rgba(139, 69, 255, 0.3);
+        }
+
+        /* Badges de Ação atualizados */
+        .action-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .action-badge.register {
+            background: rgba(139, 69, 255, 0.2);
+            color: #8b45ff;
+            border: 1px solid rgba(139, 69, 255, 0.3);
+        }
+
+        .action-badge.login {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .action-badge.logout {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .email-cell {
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .table-footer {
+            padding: 1rem 1.5rem;
+            text-align: center;
+            color: var(--text-dark);
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .loading-message {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-dark);
+            font-style: italic;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid var(--secondary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Botões */
+        .login-btn, .logout-btn {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 24px;
+            font-family: 'Cinzel', serif;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            letter-spacing: 0.5px;
+            box-shadow: var(--shadow-light);
+        }
+
+        .login-btn:hover, .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(109, 40, 217, 0.4);
+        }
+
+        .logout-btn {
+            background: linear-gradient(135deg, #ff4757, #c9a227);
+        }
+
+        .logout-btn:hover {
+            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        /* Ações Admin */
+        .admin-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* Acesso Negado */
+        #accessDenied {
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        /* Mensagens */
+        .message-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 1rem 1.5rem;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .message-container.success {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .message-container.error {
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .message-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .message-icon {
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .message-container.success .message-icon {
+            color: var(--success-color);
+        }
+
+        .message-container.error .message-icon {
+            color: var(--danger-color);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 1rem;
+            }
+            
+            .main-title {
+                font-size: 2rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .logs-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .logs-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            
+            .table-container {
+                font-size: 0.9rem;
+            }
+            
+            th, td {
+                padding: 0.75rem 1rem;
+            }
+            
+            .table-footer {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .admin-actions {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .logs-actions {
+                flex-direction: column;
+            }
+            
+            .admin-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .admin-actions button {
+                width: 100%;
+            }
+            
+            th, td {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Partículas flutuantes -->
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <!-- Header -->
+            <div class="login-header">
+                <div class="title-wrapper">
+                    <h1 class="main-title">Painel Admin</h1>
+                </div>
+                
+                <p class="subtitle">Registros de Criação de Conta</p>
+            </div>
+
+            <!-- Conteúdo Admin (visível apenas para admin) -->
+            <div id="adminContent">
+                <!-- Estatísticas -->
+                <div class="admin-stats" id="adminStats">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>Total de Cadastros</h4>
+                            <span class="stat-number" id="statTotal">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Logins</h4>
+                            <span class="stat-number" id="statLogins">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Cadastros</h4>
+                            <span class="stat-number" id="statRegisters">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Hoje</h4>
+                            <span class="stat-number" id="statToday">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela de Logs -->
+                <div class="logs-container">
+                    <div class="logs-header">
+                        <h3>Novas Contas Criadas</h3>
+                        <div class="logs-actions">
+                            <button onclick="exportLogs()" class="login-btn">
+                                📊 Exportar CSV
+                            </button>
+                            <button onclick="refreshLogs()" class="login-btn">
+                                🔄 Atualizar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="logsTable" class="logs-table">
+                        <div class="loading-message">Carregando registros de criação de conta...</div>
+                    </div>
+                </div>
+
+                <!-- Ações Admin -->
+                <div class="admin-actions">
+                    <button onclick="clearOldLogs()" class="logout-btn">
+                        🗑️ Limpar Logs Antigos
+                    </button>
+                    <button onclick="logout()" class="logout-btn">
+                        🚪 Sair
+                    </button>
+                </div>
+            </div>
+
+            <!-- Acesso Negado -->
+            <div id="accessDenied" style="display: none; text-align: center; padding: 2rem;">
+                <div style="font-size: 4rem; margin-bottom: 1rem;">🔒</div>
+                <h3 style="color: #ff4757; margin-bottom: 1rem;">Acesso Negado</h3>
+                <p style="color: var(--text-dark); margin-bottom: 2rem;">Esta área é restrita ao administrador do sistema.</p>
+                <button onclick="window.location.href = '../home.html'" class="login-btn">
+                    ← Voltar ao Início
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script>
+        // admin.js - Painel administrativo (focado em registros de criação de conta)
+        class AdminPanel {
+            constructor() {
+                this.currentUser = auth.getCurrentUser();
+                this.logs = [];
+                this.init();
+            }
+
+            async init() {
+                if (!this.checkAdminAccess()) {
+                    return;
+                }
+                
+                await this.loadAdminData();
+                this.setupEventListeners();
+            }
+
+            // Verificar se o usuário atual é admin
+            checkAdminAccess() {
+                // DEFINA SEU EMAIL DE ADMIN AQUI ⬇️
+                const adminEmails = ['seu-email@admin.com', 'admin@sarahkali.com']; // ALTERE PARA SEUS EMAILS
+                
+                const isAdmin = this.currentUser && adminEmails.includes(this.currentUser.email);
+                
+                if (!isAdmin) {
+                    document.getElementById('adminContent').style.display = 'none';
+                    document.getElementById('accessDenied').style.display = 'block';
+                    console.log('❌ Acesso negado. Email atual:', this.currentUser?.email);
+                    return false;
+                }
+                
+                console.log('✅ Acesso admin concedido para:', this.currentUser.email);
+                return true;
+            }
+
+            async loadAdminData() {
+                try {
+                    this.showLoading();
+                    this.logs = await auth.getLoginLogs(100);
+                    this.updateStats();
+                    this.renderLogsTable();
+                    this.hideLoading();
+                } catch (error) {
+                    console.error('Erro ao carregar dados admin:', error);
+                    this.showError('Erro ao carregar dados: ' + error.message);
+                }
+            }
+
+            updateStats() {
+                const today = new Date().toLocaleDateString('pt-BR');
+                
+                // Filtrar apenas registros de criação de conta
+                const registerLogs = this.logs.filter(log => log.action === 'register');
+                const todayRegisterLogs = registerLogs.filter(log => log.date === today);
+                
+                const stats = {
+                    total: registerLogs.length,
+                    logins: this.logs.filter(log => log.action === 'login').length,
+                    registers: registerLogs.length,
+                    today: todayRegisterLogs.length
+                };
+
+                document.getElementById('statTotal').textContent = stats.total;
+                document.getElementById('statLogins').textContent = stats.logins;
+                document.getElementById('statRegisters').textContent = stats.registers;
+                document.getElementById('statToday').textContent = stats.today;
+            }
+
+            renderLogsTable() {
+                const logsTable = document.getElementById('logsTable');
+                
+                // Filtrar apenas registros de criação de conta
+                const registerLogs = this.logs.filter(log => log.action === 'register');
+                
+                if (registerLogs.length === 0) {
+                    logsTable.innerHTML = `
+                        <div style="text-align: center; padding: 2rem; color: var(--text-dark);">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">👤</div>
+                            <p>Nenhum registro de criação de conta encontrado.</p>
+                            <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.7;">
+                                A tabela mostra apenas quando novos usuários se cadastram no sistema.
+                            </p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const tableHTML = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Hora</th>
+                                    <th>Ação</th>
+                                    <th>Nome</th>
+                                    <th>Email</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${registerLogs.map(log => `
+                                    <tr>
+                                        <td>${log.date}</td>
+                                        <td>${log.time}</td>
+                                        <td>
+                                            <span class="action-badge ${log.action}">
+                                                ${this.getActionIcon(log.action)} ${this.getActionText(log.action)}
+                                            </span>
+                                        </td>
+                                        <td>${log.name || 'N/A'}</td>
+                                        <td class="email-cell">${log.email}</td>
+                                        <td>
+                                            <span class="status-badge new-account">
+                                                📝 Nova Conta
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-footer">
+                        <span>Mostrando ${registerLogs.length} registros de criação de conta</span>
+                        <span style="opacity: 0.7;">
+                            Total de logs no sistema: ${this.logs.length}
+                        </span>
+                    </div>
+                `;
+
+                logsTable.innerHTML = tableHTML;
+            }
+
+            getActionIcon(action) {
+                const icons = {
+                    'register': '👤',
+                    'login': '🔑',
+                    'logout': '🚪'
+                };
+                return icons[action] || '📝';
+            }
+
+            getActionText(action) {
+                const texts = {
+                    'register': 'Cadastro',
+                    'login': 'Login',
+                    'logout': 'Logout'
+                };
+                return texts[action] || action;
+            }
+
+            showLoading() {
+                const logsTable = document.getElementById('logsTable');
+                logsTable.innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <div class="loading-spinner"></div>
+                        <p style="margin-top: 1rem; color: var(--text-dark);">Carregando registros de criação de conta...</p>
+                    </div>
+                `;
+            }
+
+            hideLoading() {
+                // Loading é removido quando a tabela é renderizada
+            }
+
+            showError(message) {
+                const logsTable = document.getElementById('logsTable');
+                logsTable.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--danger-color);">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">❌</div>
+                        <p>${message}</p>
+                        <button onclick="adminPanel.loadAdminData()" class="login-btn" style="margin-top: 1rem;">
+                            Tentar Novamente
+                        </button>
+                    </div>
+                `;
+            }
+
+            setupEventListeners() {
+                // Atualizar dados a cada 30 segundos
+                setInterval(() => {
+                    this.loadAdminData();
+                }, 30000);
+            }
+        }
+
+        // Funções globais para os botões
+        async function exportLogs() {
+            try {
+                const allLogs = await auth.getLoginLogs(1000);
+                // Exportar apenas registros de criação de conta
+                const registerLogs = allLogs.filter(log => log.action === 'register');
+                
+                if (registerLogs.length === 0) {
+                    showMessage('Nenhum registro de criação de conta para exportar', 'error');
+                    return;
+                }
+                
+                auth.exportToCSV(registerLogs);
+                showMessage('CSV com registros de criação de conta exportado com sucesso!', 'success');
+            } catch (error) {
+                showMessage('Erro ao exportar: ' + error.message, 'error');
+            }
+        }
+
+        async function refreshLogs() {
+            if (window.adminPanel) {
+                await window.adminPanel.loadAdminData();
+                showMessage('Registros de criação de conta atualizados!', 'success');
+            }
+        }
+
+        async function clearOldLogs() {
+            if (confirm('Tem certeza que deseja limpar logs antigos?\n\nIsso manterá apenas os 1000 registros mais recentes.')) {
+                try {
+                    await auth.clearOldLogs();
+                    await refreshLogs();
+                    showMessage('Logs antigos removidos!', 'success');
+                } catch (error) {
+                    showMessage('Erro ao limpar logs: ' + error.message, 'error');
+                }
+            }
+        }
+
+        function logout() {
+            auth.logout();
+        }
+
+        // Função auxiliar para mostrar mensagens
+        function showMessage(message, type = 'success') {
+            const existingMessage = document.querySelector('.message-container');
+            if (existingMessage) existingMessage.remove();
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message-container ${type}`;
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <span class="message-icon">${type === 'success' ? '✓' : '!'}</span>
+                    <span class="message-text">${message}</span>
+                </div>
+            `;
+            document.body.appendChild(messageDiv);
+
+            setTimeout(() => messageDiv.remove(), 4000);
+        }
+
+        // Inicializar admin panel quando DOM carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            window.adminPanel = new AdminPanel();
+        });
+    </script>
+</body>
+</html>

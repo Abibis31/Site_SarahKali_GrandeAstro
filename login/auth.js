@@ -1,21 +1,78 @@
-// auth.js - Sistema de autenticação com exportação para CSV
+// auth.js - Sistema de autenticação com SQLite (SEM REDIRECIONAMENTOS AUTOMÁTICOS)
 
 class AuthSystem {
     constructor() {
         this.users = JSON.parse(localStorage.getItem('users')) || [];
-        this.currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
-        console.log('Sistema de auth inicializado. Usuários:', this.users.length);
+        
+        // VERIFICAÇÃO SIMPLES - Só carrega usuário se existir
+        const storedUser = JSON.parse(localStorage.getItem('currentUser'));
+        if (storedUser && this.users.find(user => user.email === storedUser.email)) {
+            this.currentUser = storedUser;
+            console.log('✅ Usuário logado:', storedUser.email);
+        } else {
+            this.currentUser = null;
+            if (storedUser) {
+                localStorage.removeItem('currentUser');
+                console.log('🗑️ Usuário inválido removido');
+            }
+            console.log('🔒 Nenhum usuário logado');
+        }
+        
+        this.db = null;
+        this.initDatabase();
     }
 
-    // Registrar eventos e criar arquivo CSV
-    logToSheet(user, action = 'login') {
+    // Inicializar banco de dados SQLite
+    async initDatabase() {
+        return new Promise((resolve, reject) => {
+            try {
+                this.db = window.openDatabase('AuthSystem', '1.0', 'Authentication Database', 2 * 1024 * 1024);
+                
+                this.db.transaction(tx => {
+                    tx.executeSql(`
+                        CREATE TABLE IF NOT EXISTS login_logs (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            date TEXT,
+                            time TEXT,
+                            action TEXT,
+                            name TEXT,
+                            email TEXT,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    `);
+                    
+                    tx.executeSql(`
+                        CREATE TABLE IF NOT EXISTS users (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            name TEXT,
+                            email TEXT UNIQUE,
+                            password TEXT,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    `);
+                }, (error) => {
+                    console.error('❌ Erro ao criar tabelas:', error);
+                    reject(error);
+                }, () => {
+                    console.log('✅ Banco de dados SQLite inicializado');
+                    resolve();
+                });
+                
+            } catch (error) {
+                console.error('❌ Erro ao inicializar banco de dados:', error);
+                resolve();
+            }
+        });
+    }
+
+    // Registrar eventos no SQLite
+    async logToSheet(user, action = 'login') {
         try {
-            console.log(`📊 Registrando ${action}...`);
+            if (this.db) {
+                await this.logToSQLite(user, action);
+            }
             
-            // Obter ou criar os dados
             const sheetData = JSON.parse(localStorage.getItem('loginRecords')) || [];
-            
-            // Novo registro
             const newRecord = {
                 date: new Date().toLocaleDateString('pt-BR'),
                 time: new Date().toLocaleTimeString('pt-BR'),
@@ -24,34 +81,90 @@ class AuthSystem {
                 email: user.email
             };
             
-            // Adicionar ao array
             sheetData.push(newRecord);
-            
-            // Salvar no localStorage
             localStorage.setItem('loginRecords', JSON.stringify(sheetData));
             
             console.log(`✅ ${action} registrado. Total: ${sheetData.length} registros`);
-            
-            // CRIAR ARQUIVO CSV FÍSICO
-            this.createCSVFile(sheetData);
             
         } catch (error) {
             console.error(`❌ Erro ao registrar ${action}:`, error);
         }
     }
 
-    // Criar arquivo CSV físico
-    createCSVFile(records) {
+    // Registrar no SQLite
+    logToSQLite(user, action) {
+        return new Promise((resolve, reject) => {
+            this.db.transaction(tx => {
+                tx.executeSql(
+                    `INSERT INTO login_logs (date, time, action, name, email) VALUES (?, ?, ?, ?, ?)`,
+                    [
+                        new Date().toLocaleDateString('pt-BR'),
+                        new Date().toLocaleTimeString('pt-BR'),
+                        action,
+                        user.name || 'N/A',
+                        user.email
+                    ],
+                    (tx, results) => {
+                        console.log(`✅ ${action} registrado no SQLite. ID: ${results.insertId}`);
+                        resolve(results);
+                    },
+                    (tx, error) => {
+                        console.error(`❌ Erro SQLite:`, error);
+                        reject(error);
+                    }
+                );
+            });
+        });
+    }
+
+    // Buscar logs do SQLite (para página admin)
+    async getLoginLogs(limit = 100) {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                const logs = JSON.parse(localStorage.getItem('loginRecords')) || [];
+                resolve(logs.slice(-limit).reverse());
+                return;
+            }
+
+            this.db.transaction(tx => {
+                tx.executeSql(
+                    `SELECT * FROM login_logs ORDER BY created_at DESC LIMIT ?`,
+                    [limit],
+                    (tx, results) => {
+                        const logs = [];
+                        for (let i = 0; i < results.rows.length; i++) {
+                            logs.push(results.rows.item(i));
+                        }
+                        resolve(logs);
+                    },
+                    (tx, error) => {
+                        console.error('❌ Erro ao buscar logs:', error);
+                        const logs = JSON.parse(localStorage.getItem('loginRecords')) || [];
+                        resolve(logs.slice(-limit).reverse());
+                    }
+                );
+            });
+        });
+    }
+
+    // Método OPCIONAL para exportar CSV manualmente
+    exportToCSV(logs = null) {
         try {
-            // Cabeçalho do CSV
+            if (!logs) {
+                logs = JSON.parse(localStorage.getItem('loginRecords')) || [];
+            }
+            
+            if (logs.length === 0) {
+                alert('Nenhum registro para exportar');
+                return;
+            }
+            
             let csv = 'Data,Hora,Ação,Nome,Email\n';
             
-            // Adicionar todos os registros
-            records.forEach(record => {
+            logs.forEach(record => {
                 csv += `"${record.date}","${record.time}","${record.action}","${record.name}","${record.email}"\n`;
             });
             
-            // Criar arquivo
             const blob = new Blob([csv], { 
                 type: 'text/csv;charset=utf-8;' 
             });
@@ -65,10 +178,10 @@ class AuthSystem {
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
             
-            console.log('📁 Arquivo CSV criado: planilha_logins.csv');
+            console.log('📁 Arquivo CSV exportado manualmente: planilha_logins.csv');
             
         } catch (error) {
-            console.error('❌ Erro ao criar arquivo CSV:', error);
+            console.error('❌ Erro ao exportar CSV:', error);
         }
     }
 
@@ -76,7 +189,6 @@ class AuthSystem {
     register(userData) {
         return new Promise((resolve, reject) => {
             try {
-                // Validações
                 if (!userData.name || !userData.email || !userData.password) {
                     throw new Error('Todos os campos são obrigatórios');
                 }
@@ -93,7 +205,6 @@ class AuthSystem {
                     throw new Error('Este email já está cadastrado');
                 }
 
-                // Cria o usuário
                 const newUser = {
                     id: Date.now().toString(),
                     name: userData.name,
@@ -105,7 +216,7 @@ class AuthSystem {
                 this.users.push(newUser);
                 this.saveUsers();
 
-                // REGISTRAR CADASTRO E CRIAR ARQUIVO
+                // REGISTRAR CADASTRO
                 this.logToSheet(newUser, 'register');
 
                 // Login automático
@@ -119,7 +230,7 @@ class AuthSystem {
         });
     }
 
-    // Login
+    // Login - SEM REDIRECIONAMENTO AUTOMÁTICO
     login(email, password, rememberMe = false) {
         return new Promise((resolve, reject) => {
             try {
@@ -131,16 +242,25 @@ class AuthSystem {
                     
                     if (rememberMe) {
                         localStorage.setItem('rememberMe', 'true');
+                    } else {
+                        localStorage.removeItem('rememberMe');
                     }
                     
-                    // REGISTRAR LOGIN E CRIAR ARQUIVO
+                    // REGISTRAR LOGIN
                     this.logToSheet(user, 'login');
                     
+                    console.log('✅ Login realizado com sucesso:', user.email);
                     resolve(user);
                 } else {
+                    this.currentUser = null;
+                    localStorage.removeItem('currentUser');
+                    console.log('❌ Login falhou: credenciais inválidas');
                     reject(new Error('Email ou senha incorretos'));
                 }
             } catch (error) {
+                this.currentUser = null;
+                localStorage.removeItem('currentUser');
+                console.error('❌ Erro interno no login:', error);
                 reject(new Error('Erro interno no sistema de login'));
             }
         });
@@ -194,15 +314,17 @@ class AuthSystem {
 
     // Logout
     logout() {
+        console.log('🔒 Logout realizado:', this.currentUser?.email);
         this.currentUser = null;
         localStorage.removeItem('currentUser');
         localStorage.removeItem('rememberMe');
-        window.location.href = 'login/index.html';
+        // Redireciona para a página inicial
+        window.location.href = '../index.html';
     }
 
     // Verificar se está logado
     isLoggedIn() {
-        return this.currentUser !== null;
+        return this.currentUser !== null && this.users.find(user => user.email === this.currentUser.email);
     }
 
     // Obter usuário atual
@@ -215,6 +337,14 @@ class AuthSystem {
         localStorage.setItem('users', JSON.stringify(this.users));
     }
 
+    // MÉTODO PARA LIMPAR SESSÃO
+    clearSession() {
+        this.currentUser = null;
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('rememberMe');
+        console.log('✅ Sessão limpa completamente');
+    }
+
     // Verificar força da senha
     checkPasswordStrength(password) {
         const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
@@ -224,11 +354,43 @@ class AuthSystem {
         if (mediumRegex.test(password)) return 'medium';
         return 'weak';
     }
+
+    // Limpar logs antigos (manter apenas últimos 1000)
+    async clearOldLogs() {
+        return new Promise((resolve, reject) => {
+            if (!this.db) {
+                const logs = JSON.parse(localStorage.getItem('loginRecords')) || [];
+                const recentLogs = logs.slice(-1000);
+                localStorage.setItem('loginRecords', JSON.stringify(recentLogs));
+                resolve();
+                return;
+            }
+
+            this.db.transaction(tx => {
+                tx.executeSql(
+                    `DELETE FROM login_logs WHERE id NOT IN (
+                        SELECT id FROM login_logs ORDER BY created_at DESC LIMIT 1000
+                    )`,
+                    [],
+                    (tx, results) => {
+                        console.log(`✅ Logs antigos removidos. Linhas afetadas: ${results.rowsAffected}`);
+                        resolve(results);
+                    },
+                    (tx, error) => {
+                        reject(error);
+                    }
+                );
+            });
+        });
+    }
 }
 
 // Inicializar sistema
 const auth = new AuthSystem();
 window.auth = auth;
+
+// REMOVIDO COMPLETAMENTE O REDIRECIONAMENTO AUTOMÁTICO
+// O controle de navegação agora é 100% manual nos formulários
 
 // Funções auxiliares
 function showLoading(button) {
