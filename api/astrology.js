@@ -80,17 +80,24 @@ export function calcularSignoLunar(dataNascimento) {
 }
 
 /**
- * Calcula o Ascendente (aproximação baseada na hora)
+ * ✅ FUNÇÃO MELHORADA: Cálculo de ascendente com mais variáveis
  */
-export function calcularAscendente(signoSolar, horaNascimento) {
-    if (!horaNascimento) return null;
+export function calcularAscendente(signoSolar, horaNascimento, localNascimento) {
+    if (!horaNascimento || !localNascimento) return null;
     
-    const [hora] = horaNascimento.split(':').map(Number);
+    const [hora, minuto] = horaNascimento.split(':').map(Number);
     const signos = [...SIGNOS_SOLARES];
     const indiceSolar = signos.findIndex(s => s.signo === signoSolar.signo);
     
-    // Fórmula simplificada: cada 2 horas muda o ascendente
-    const indiceAscendente = (indiceSolar + Math.floor(hora / 2)) % 12;
+    // Fórmula melhorada considerando minutos e localização aproximada
+    const horaDecimal = hora + (minuto / 60);
+    
+    // Ajuste baseado na latitude (simplificado para Brasil)
+    const ajusteLatitude = localNascimento.toLowerCase().includes('norte') ? 1 : 
+                          localNascimento.toLowerCase().includes('sul') ? -1 : 0;
+    
+    const velocidadeAscendente = 2 + (ajusteLatitude * 0.5); // graus por hora
+    const indiceAscendente = (indiceSolar + Math.floor(horaDecimal / velocidadeAscendente)) % 12;
     
     return signos[indiceAscendente];
 }
@@ -157,30 +164,86 @@ function obterInterpretacaoSigno(signo) {
     return interpretacoes[signo.signo] || 'Interpretação não disponível.';
 }
 
-function obterAspectosPlanetarios(signoSolar, signoLunar, ascendente) {
+/**
+ * ✅ NOVO: Sistema de aspectos mais detalhado
+ */
+function obterAspectosDetalhados(signoSolar, signoLunar, ascendente) {
     const aspectos = [];
     
-    // Sol e Lua no mesmo elemento - harmonia emocional
+    // Conjunção Sol-Lua
     if (signoSolar.elemento === signoLunar.elemento) {
-        aspectos.push('☀️🌙 **Sol e Lua em Conjunção Harmônica**: Sua identidade e emoções estão alinhadas, trazendo coerência interna.');
+        aspectos.push({
+            tipo: 'Conjunção Harmônica',
+            planetas: 'Sol e Lua',
+            significado: 'Sua identidade e emoções estão alinhadas, trazendo coerência interna',
+            influencia: 'Positiva'
+        });
     }
     
-    // Elementos complementares
-    const combinacoesElementos = {
-        'Fogo': 'sua energia e paixão se manifestam com intensidade',
-        'Terra': 'sua praticidade e estabilidade são marcas fortes',
-        'Ar': 'sua comunicação e intelectualidade se destacam',
-        'Água': 'sua intuição e sensibilidade guiam suas ações'
+    // Quadratura (desafio)
+    const elementosDesafio = {
+        'Fogo': 'Terra', 'Terra': 'Ar', 'Ar': 'Água', 'Água': 'Fogo'
     };
     
-    aspectos.push(`⚡ **Elemento Dominante**: ${combinacoesElementos[signoSolar.elemento]}`);
+    if (elementosDesafio[signoSolar.elemento] === signoLunar.elemento) {
+        aspectos.push({
+            tipo: 'Quadratura de Desafio',
+            planetas: 'Sol e Lua',
+            significado: 'Tensão entre sua identidade e emoções, exigindo integração',
+            influencia: 'Desafiadora'
+        });
+    }
     
-    // Compatibilidade com ascendente
-    if (ascendente && ascendente.elemento === signoSolar.elemento) {
-        aspectos.push('🌟 **Personalidade Coesa**: Seu eu interior e exterior estão alinhados, facilitando a autenticidade.');
+    // Trígono (harmonia)
+    const elementosHarmonia = {
+        'Fogo': 'Ar', 'Ar': 'Fogo', 
+        'Terra': 'Água', 'Água': 'Terra'
+    };
+    
+    if (elementosHarmonia[signoSolar.elemento] === signoLunar.elemento) {
+        aspectos.push({
+            tipo: 'Trígono Harmônico',
+            planetas: 'Sol e Lua',
+            significado: 'Fluidez natural entre vontade e sentimento',
+            influencia: 'Muito Positiva'
+        });
+    }
+    
+    // Oposição (polaridade)
+    const elementosOposicao = {
+        'Fogo': 'Água', 'Água': 'Fogo',
+        'Terra': 'Ar', 'Ar': 'Terra'
+    };
+    
+    if (elementosOposicao[signoSolar.elemento] === signoLunar.elemento) {
+        aspectos.push({
+            tipo: 'Oposição de Polaridade',
+            planetas: 'Sol e Lua',
+            significado: 'Tensão criativa entre aspectos opostos da personalidade',
+            influencia: 'Desafiadora mas evolutiva'
+        });
     }
     
     return aspectos;
+}
+
+function obterAspectosPlanetarios(signoSolar, signoLunar, ascendente) {
+    const aspectos = obterAspectosDetalhados(signoSolar, signoLunar, ascendente);
+    
+    // Converte para formato de texto
+    return aspectos.map(aspecto => 
+        `${obterEmojiAspecto(aspecto.influencia)} **${aspecto.tipo}**: ${aspecto.significado}`
+    );
+}
+
+function obterEmojiAspecto(influencia) {
+    const emojis = {
+        'Positiva': '💫',
+        'Muito Positiva': '🌟',
+        'Desafiadora': '⚡',
+        'Desafiadora mas evolutiva': '🌀'
+    };
+    return emojis[influencia] || '✨';
 }
 
 // ======================
@@ -226,8 +289,25 @@ function extrairNomeInteligente(mensagem) {
  */
 export function gerarRelatorioMapaAstral(nomeCompleto, dataNascimento, horaNascimento = null, localNascimento = null) {
     try {
+        // ✅ VALIDAÇÃO DE DADOS
+        if (!dataNascimento) {
+            return {
+                sucesso: false,
+                erro: 'Data de nascimento é obrigatória'
+            };
+        }
+        
+        // Valida formato da data
+        const dataRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+        if (!dataRegex.test(dataNascimento)) {
+            return {
+                sucesso: false,
+                erro: 'Formato de data inválido. Use DD/MM/AAAA'
+            };
+        }
+        
         // ✅ MELHORIA: Se o nome está vazio ou muito curto, tenta extrair de forma inteligente
-        if ((!nomeCompleto || nomeCompleto.length < 3) && dataNascimento) {
+        if ((!nomeCompleto || nomeCompleto.length < 3)) {
             // Tenta inferir um nome baseado no contexto (em um sistema real, isso viria do histórico)
             // Por enquanto, usamos um placeholder
             nomeCompleto = nomeCompleto || "Consulta Astral";
@@ -236,12 +316,13 @@ export function gerarRelatorioMapaAstral(nomeCompleto, dataNascimento, horaNasci
         // Cálculos astrológicos
         const signoSolar = calcularSignoSolar(dataNascimento);
         const signoLunar = calcularSignoLunar(dataNascimento);
-        const ascendente = calcularAscendente(signoSolar, horaNascimento);
+        const ascendente = calcularAscendente(signoSolar, horaNascimento, localNascimento);
         const casas = ascendente ? calcularCasasAstrologicas(ascendente) : [];
         
         // Interpretações
         const interpretacaoSolar = obterInterpretacaoSigno(signoSolar);
         const interpretacaoLunar = obterInterpretacaoSigno(signoLunar);
+        const interpretacaoAscendente = ascendente ? obterInterpretacaoSigno(ascendente) : null;
         const aspectos = obterAspectosPlanetarios(signoSolar, signoLunar, ascendente);
         
         // ✅ MELHORIA: Formata o nome para exibição
@@ -271,14 +352,14 @@ ${interpretacaoLunar}
 ${ascendente ? `
 **↑ ASCENDENTE em ${ascendente.signo}**
 - **Elemento:** ${ascendente.elemento} | **Regente:** ${ascendente.regente}
-*Sua máscara social, como os outros te veem*
+${interpretacaoAscendente ? `*${interpretacaoAscendente}*` : '*Sua máscara social, como os outros te veem*'}
 ` : '*Forneça a hora de nascimento para calcular o Ascendente*'}
 
 ---
 
 ## 🪐 ASPECTOS PLANETÁRIOS:
 
-${aspectos.map(aspecto => `• ${aspecto}`).join('\n')}
+${aspectos.length > 0 ? aspectos.map(aspecto => `• ${aspecto}`).join('\n') : '• ✨ **Alinhamento Neutro**: Seus aspectos principais estão em equilíbrio'}
 
 ---
 

@@ -63,6 +63,69 @@ SEJA:
 - Acolhedora mas prática
 - Contextualizada na conversa`;
 
+// ✅ NOVO: Sistema de Cache para Relatórios
+const relatorioCache = new Map();
+
+function gerarChaveCache(servico, dados) {
+    return `${servico}_${JSON.stringify(dados)}`;
+}
+
+function verificarCache(servico, dados) {
+    const chave = gerarChaveCache(servico, dados);
+    const cached = relatorioCache.get(chave);
+    
+    if (cached && Date.now() < cached.expiraEm) {
+        return cached.relatorio;
+    }
+    
+    // Remove do cache se expirado
+    if (cached) {
+        relatorioCache.delete(chave);
+    }
+    
+    return null;
+}
+
+function adicionarCache(servico, dados, relatorio) {
+    const chave = gerarChaveCache(servico, dados);
+    // Cache por 30 minutos
+    relatorioCache.set(chave, {
+        relatorio,
+        timestamp: Date.now(),
+        expiraEm: Date.now() + (30 * 60 * 1000)
+    });
+}
+
+/**
+ * ✅ FUNÇÃO MELHORADA: Validação robusta de data
+ */
+function validarData(data) {
+    const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+    const match = data.match(regex);
+    
+    if (!match) return false;
+    
+    const [_, dia, mes, ano] = match.map(Number);
+    
+    // Verifica se a data é válida
+    if (mes < 1 || mes > 12) return false;
+    if (dia < 1 || dia > 31) return false;
+    
+    // Verifica meses com 30 dias
+    if ([4, 6, 9, 11].includes(mes) && dia > 30) return false;
+    
+    // Verifica fevereiro e anos bissextos
+    if (mes === 2) {
+        const isBissexto = (ano % 4 === 0 && ano % 100 !== 0) || (ano % 400 === 0);
+        if (dia > (isBissexto ? 29 : 28)) return false;
+    }
+    
+    const dataObj = new Date(ano, mes - 1, dia);
+    return dataObj.getDate() === dia && 
+           dataObj.getMonth() === mes - 1 && 
+           dataObj.getFullYear() === ano;
+}
+
 /**
  * Função para detectar se o usuário está pedindo um serviço específico
  */
@@ -125,30 +188,43 @@ function verificarFluxoAtivo(historico) {
 }
 
 /**
- * ✅ FUNÇÃO: Extrair nome e data da mensagem do usuário
+ * ✅ FUNÇÃO MELHORADA: Extração de nome e data
  */
 function extrairNomeEData(mensagem) {
-    // Tenta encontrar padrões de data
-    const dataRegex = /(\d{1,2})\/(\d{1,2})\/(\d{4})/;
-    const matchData = mensagem.match(dataRegex);
+    const dataRegex = /(\d{1,2})\/(\d{1,2})\/(\d{4})/g;
+    const datas = [];
+    let match;
     
-    if (!matchData) {
-        return null;
+    while ((match = dataRegex.exec(mensagem)) !== null) {
+        if (validarData(match[0])) {
+            datas.push(match[0]);
+        }
     }
     
-    const data = matchData[0];
+    if (datas.length === 0) return null;
     
-    // Remove a data da mensagem para extrair o nome
-    let nome = mensagem.replace(dataRegex, '').replace(/[,\-]/g, '').trim();
+    const data = datas[0];
+    let nome = mensagem
+        .replace(dataRegex, '')
+        .replace(/[,\-\.]/g, '')
+        .trim();
     
-    // Limpa possíveis sobras
-    nome = nome.replace(/\s+/g, ' ').replace(/^meu nome é /i, '').replace(/^nome /i, '');
+    // Limpeza mais agressiva de padrões comuns
+    const padroesRemover = [
+        /^(ok|okay|sim|claro|tudo bem|beleza),?\s*/i,
+        /^(quero|gostaria|preciso|desejo|meu|o|a)\s+/i,
+        /\s*(mapa astral|numerologia|tarot|signo|zodíaco).*$/i,
+        /\s*nascimento.*$/i,
+        /\s*data.*$/i
+    ];
     
-    if (!nome || nome.length < 2) {
-        return null;
-    }
+    padroesRemover.forEach(regex => {
+        nome = nome.replace(regex, '');
+    });
     
-    return { nome, data };
+    nome = nome.replace(/\s+/g, ' ').trim();
+    
+    return nome.length >= 2 ? { nome, data } : null;
 }
 
 /**
@@ -173,29 +249,28 @@ function verificarDadosNumerologiaNoHistorico(historico) {
 }
 
 /**
- * ✅ NOVA FUNÇÃO: Verificar se já gerou relatório recentemente
+ * ✅ FUNÇÃO MELHORADA: Verificar se já gerou relatório recentemente
  */
 function jaGerouRelatorioRecentemente(historico, servico) {
-    const ultimasMensagens = historico.slice(-4);
+    const ultimasMensagens = historico.slice(-6);
     
     for (let i = ultimasMensagens.length - 1; i >= 0; i--) {
         const msg = ultimasMensagens[i];
         
         if (msg.role === 'assistant') {
-            // Verifica se já gerou relatório deste serviço recentemente
-            if (servico === 'mapa_astral' && msg.content.includes('MAPA ASTRAL DE')) {
-                return true;
-            }
-            if (servico === 'numerologia' && msg.content.includes('ANÁLISE NUMEROLÓGICA')) {
-                return true;
-            }
-        }
-        
-        // Se encontrou uma mensagem do usuário pedindo o serviço novamente, não bloqueia
-        if (msg.role === 'user') {
-            const servicoSolicitado = detectarServicoSolicitado(msg.content);
-            if (servicoSolicitado === servico) {
-                return false;
+            const indicadores = {
+                'mapa_astral': ['MAPA ASTRAL DE', 'SIGNOS SOLAR', 'ASCENDENTE'],
+                'numerologia': ['ANÁLISE NUMEROLÓGICA', 'NÚMERO DA VIDA', 'NÚMERO DE EXPRESSÃO']
+            };
+            
+            if (indicadores[servico]?.some(ind => msg.content.includes(ind))) {
+                // Verifica se o usuário não pediu explicitamente um novo
+                const mensagensSeguintes = ultimasMensagens.slice(i + 1);
+                const pediuNovo = mensagensSeguintes.some(m => 
+                    m.role === 'user' && detectarServicoSolicitado(m.content) === servico
+                );
+                
+                return !pediuNovo;
             }
         }
     }
@@ -204,7 +279,7 @@ function jaGerouRelatorioRecentemente(historico, servico) {
 }
 
 /**
- * ✅ NOVA FUNÇÃO: Verificar dados para mapa astral no histórico
+ * ✅ FUNÇÃO: Verificar dados para mapa astral no histórico
  */
 function verificarDadosMapaAstralNoHistorico(historico) {
     const mensagensRelevantes = historico.slice(-8);
@@ -223,7 +298,7 @@ function verificarDadosMapaAstralNoHistorico(historico) {
             
             // Tenta extrair data (formato DD/MM/AAAA)
             const dataMatch = texto.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-            if (dataMatch && !data) {
+            if (dataMatch && !data && validarData(dataMatch[0])) {
                 data = dataMatch[0];
             }
             
@@ -298,7 +373,7 @@ function verificarDadosMapaAstralNoHistorico(historico) {
 }
 
 /**
- * ✅ NOVA FUNÇÃO: Verificar quais dados estão faltando
+ * ✅ FUNÇÃO: Verificar quais dados estão faltando
  */
 function verificarDadosFaltantesMapaAstral(dados) {
     const faltantes = [];
@@ -320,7 +395,7 @@ function verificarDadosFaltantesMapaAstral(dados) {
 }
 
 /**
- * ✅ NOVA FUNÇÃO: Mensagens específicas para dados faltantes
+ * ✅ FUNÇÃO: Mensagens específicas para dados faltantes
  */
 function gerarMensagemDadosFaltantes(dadosFaltantes, dadosColetados) {
     console.log(`📋 Dados coletados:`, dadosColetados);
@@ -374,6 +449,52 @@ function gerarMensagemDadosFaltantes(dadosFaltantes, dadosColetados) {
     
     // Mensagem padrão
     return "Perfeito! Para seu mapa astral completo, preciso do seu **nome completo**, **data de nascimento** (formato DD/MM/AAAA), **hora de nascimento** (se souber) e **cidade de nascimento**. Pode me informar? ✨";
+}
+
+/**
+ * ✅ NOVA FUNÇÃO: Chamada robusta para Groq API com fallback
+ */
+async function chamarGroqAPI(mensagensCompletas) {
+    const modelos = [
+        "llama-3.1-8b-instant",
+        "mixtral-8x7b-32768", // fallback
+        "gemma-7b-it" // segundo fallback
+    ];
+    
+    for (const modelo of modelos) {
+        try {
+            console.log(`🔄 Tentando modelo: ${modelo}`);
+            
+            const response = await fetch(GROQ_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${GROQ_API_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    model: modelo,
+                    messages: mensagensCompletas,
+                    temperature: 0.7,
+                    max_tokens: 1024,
+                    top_p: 0.9,
+                    stream: false,
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`✅ Sucesso com modelo: ${modelo}`);
+                return data.choices[0].message.content.trim();
+            } else {
+                console.warn(`❌ Modelo ${modelo} falhou: ${response.status}`);
+            }
+        } catch (error) {
+            console.warn(`❌ Modelo ${modelo} erro: ${error.message}`);
+            continue;
+        }
+    }
+    
+    throw new Error('Todos os modelos falharam');
 }
 
 export async function getOpenAIResponse(messages) {
@@ -435,11 +556,20 @@ export async function getOpenAIResponse(messages) {
                 if (dadosUsuario) {
                     console.log(`📊 Dados encontrados: ${dadosUsuario.nome}, ${dadosUsuario.data}`);
                     
+                    // ✅ VERIFICA CACHE PRIMEIRO
+                    const cached = verificarCache('numerologia', dadosUsuario);
+                    if (cached) {
+                        console.log('✅ Retornando relatório do cache');
+                        return cached;
+                    }
+                    
                     // ✅ GERA RELATÓRIO NUMEROLÓGICO REAL
                     const relatorio = gerarRelatorioNumerologico(dadosUsuario.nome, dadosUsuario.data);
                     
                     if (relatorio.sucesso) {
                         console.log('✅ Relatório numerológico gerado com sucesso!');
+                        // ✅ ADICIONA AO CACHE
+                        adicionarCache('numerologia', dadosUsuario, relatorio.relatorio);
                         return relatorio.relatorio;
                     } else {
                         console.error('❌ Erro no relatório:', relatorio.erro);
@@ -473,10 +603,19 @@ export async function getOpenAIResponse(messages) {
                     // ✅ TEMOS TODOS OS DADOS - GERA RELATÓRIO
                     console.log(`📊 Dados completos: ${dadosUsuario.nome}, ${dadosUsuario.data}, ${dadosUsuario.hora}, ${dadosUsuario.local}`);
                     
+                    // ✅ VERIFICA CACHE PRIMEIRO
+                    const cached = verificarCache('mapa_astral', dadosUsuario);
+                    if (cached) {
+                        console.log('✅ Retornando relatório do cache');
+                        return cached;
+                    }
+                    
                     const relatorio = gerarRelatorioMapaAstral(dadosUsuario.nome, dadosUsuario.data, dadosUsuario.hora, dadosUsuario.local);
                     
                     if (relatorio.sucesso) {
                         console.log('✅ Relatório de mapa astral gerado com sucesso!');
+                        // ✅ ADICIONA AO CACHE
+                        adicionarCache('mapa_astral', dadosUsuario, relatorio.relatorio);
                         return relatorio.relatorio;
                     } else {
                         console.error('❌ Erro no relatório:', relatorio.erro);
@@ -504,49 +643,15 @@ export async function getOpenAIResponse(messages) {
 
         console.log(`📤 Enviando ${mensagensCompletas.length} mensagens para Groq API`);
 
-        // Chamada para Groq API
-        const response = await fetch(GROQ_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${GROQ_API_KEY}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                model: "llama-3.1-8b-instant", // Modelo rápido e econômico
-                messages: mensagensCompletas,
-                temperature: 0.7,
-                max_tokens: 1024,
-                top_p: 0.9,
-                stream: false,
-            })
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`❌ Erro Groq API: ${response.status}`, errorText);
-            
-            if (response.status === 429) {
-                return "Estou recebendo muitas consultas agora. Por favor, tente novamente em alguns instantes. 🌟";
-            }
-            
-            throw new Error(`Erro na API: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-            console.error('❌ Resposta inválida da API:', data);
-            throw new Error('Resposta da API incompleta');
-        }
-
-        let resposta = data.choices[0].message.content.trim();
+        // Chamada para Groq API com fallback
+        const resposta = await chamarGroqAPI(mensagensCompletas);
 
         // Limpeza e otimização da resposta
-        resposta = otimizarResposta(resposta);
+        const respostaOtimizada = otimizarResposta(resposta);
 
-        console.log(`✅ Resposta: ${resposta.substring(0, 100)}...`);
+        console.log(`✅ Resposta: ${respostaOtimizada.substring(0, 100)}...`);
 
-        return resposta;
+        return respostaOtimizada;
 
     } catch (error) {
         console.error('❌ Erro:', error.message);
@@ -565,6 +670,8 @@ export async function getOpenAIResponse(messages) {
  * Função para otimizar e limpar as respostas
  */
 function otimizarResposta(resposta) {
+    if (!resposta) return "Como posso ajudar você?";
+    
     // Remove saudações muito longas
     resposta = resposta.replace(/^(Olá, (querido|querida|amigo|amiga|alma|viajante).+?\..+?\.)/i, '');
     
